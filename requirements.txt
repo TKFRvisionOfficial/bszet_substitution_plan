@@ -1,2 +1,4 @@
 aiohttp
-camelot-py[cv]
+# camelot-py[cv]
+Pillow
+pdf2image
