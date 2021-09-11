@@ -39,7 +39,6 @@ async def main():
 				data=fd
 			) as telegram_response:
 				print(await telegram_response.text())
-		await asyncio.sleep(30*60)
 
 
 if __name__ == '__main__':
