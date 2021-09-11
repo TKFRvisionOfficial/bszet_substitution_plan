@@ -2,3 +2,6 @@ aiohttp
 # camelot-py[cv]
 Pillow
 pdf2image
+fastapi
+python-multipart
+uvicorn
