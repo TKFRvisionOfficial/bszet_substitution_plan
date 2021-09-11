@@ -26,21 +26,20 @@ def combine_and_convert_images(images: Iterable[Image.Image]) -> bytes:
 
 async def main():
 	async with aiohttp.ClientSession() as session:
-		while True:
+		async with session.get(
+				"http://geschuetzt.bszet.de/s-lk-vw/Vertretungsplaene/vertretungsplan-bgy.pdf",
+				auth=aiohttp.BasicAuth(BSZET_USERNAME, BSZET_PASSWORD)) as substitution_response:
+			fd = aiohttp.FormData()
+			# maybe memory leak? async implemented properly?
+			imgs = pdf2image.convert_from_bytes(await substitution_response.read(), 200)
+			fd.add_field("photo", combine_and_convert_images(imgs))
 			async with session.get(
-					"http://geschuetzt.bszet.de/s-lk-vw/Vertretungsplaene/vertretungsplan-bgy.pdf",
-					auth=aiohttp.BasicAuth(BSZET_USERNAME, BSZET_PASSWORD)) as substitution_response:
-				fd = aiohttp.FormData()
-				# maybe memory leak? async implemented properly?
-				imgs = pdf2image.convert_from_bytes(await substitution_response.read(), 200)
-				fd.add_field("photo", combine_and_convert_images(imgs))
-				async with session.get(
-					f"https://api.telegram.org/bot{TELEGRAM_API_TOKEN}/sendPhoto",
-					params={"chat_id": CHAT_ID},
-					data=fd
-				) as telegram_response:
-					print(await telegram_response.text())
-			await asyncio.sleep(30*60)
+				f"https://api.telegram.org/bot{TELEGRAM_API_TOKEN}/sendPhoto",
+				params={"chat_id": CHAT_ID},
+				data=fd
+			) as telegram_response:
+				print(await telegram_response.text())
+		await asyncio.sleep(30*60)
 
 
 if __name__ == '__main__':
