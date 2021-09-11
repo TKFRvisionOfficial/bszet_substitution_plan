@@ -1,6 +1,6 @@
 FROM python:3.9-alpine
 
-RUN apk add --update --no-cache g++ poppler zlib-dev libjpeg-turbo-dev
+RUN apk add --update --no-cache g++ poppler-utils zlib-dev libjpeg-turbo-dev
 
 WORKDIR /app
 COPY requirements.txt .
