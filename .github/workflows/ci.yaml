@@ -7,7 +7,7 @@ on:
   pull_request:
 
 env:
-  GHCR_SLUG: ghcr.io/TKFRvisionOfficial/pdf2img
+  GHCR_SLUG: ghcr.io/tkfrvisionofficial/pdf2img
   DOCKER_PLATFORMS: linux/amd64,linux/arm/v7,linux/arm64/v8
 
 jobs:
