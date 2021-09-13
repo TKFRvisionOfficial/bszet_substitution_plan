@@ -1,7 +1,7 @@
 FROM python:3.9-alpine
 
 WORKDIR /tmp/fonts
-RUN apk add --update --no-cache g++ poppler-utils zlib-dev libjpeg-turbo-dev curl unzip \
+RUN apk add --update --no-cache g++ poppler-utils freetype-dev zlib-dev libjpeg-turbo-dev curl unzip \
  && curl -fsSLo jetbrains-mono.zip https://github.com/JetBrains/JetBrainsMono/releases/download/v2.242/JetBrainsMono-2.242.zip \
  && unzip jetbrains-mono.zip \
  && apk del curl unzip \
