@@ -1,9 +1,14 @@
 import pdf2image
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import io
 from uuid import uuid4
 from typing import List
 import os
+
+_FONT = ImageFont.truetype("fonts/JetBrainsMono-Bold.ttf", 100)
+_FONT_SMALL = ImageFont.truetype("fonts/JetBrainsMono-Bold.ttf", 50)
+_BSZET_ORANGE = (238, 104, 35)
+
 
 def convert_pdf_to_img(pdf: bytes) -> bytes:
     images = pdf2image.convert_from_bytes(pdf, 200)
@@ -34,3 +39,17 @@ def save_pdf_to_folder(pdf: bytes, path: str) -> List[str]:
         uuid_list.append(cur_uuid)
         image.save(os.path.join(path, cur_uuid + ".jpg"), dpi=(200, 200), quality=90)
     return uuid_list
+
+
+def create_cover_sheet(path: str, top: str = None, top2: str = None, bottom: str = None) -> str:
+    img = Image.new('RGB', (1280, 904), color=(255, 255, 255))
+    draw = ImageDraw.Draw(img)
+
+    draw.line((150, 489, 1140, 489), fill=_BSZET_ORANGE, width=30)
+    draw.text((640, 325), top if top else "", anchor="mm", font=_FONT, fill=_BSZET_ORANGE)
+    draw.text((640, 420), top2 if top2 else "", anchor="mm", font=_FONT_SMALL, fill=_BSZET_ORANGE)
+    draw.text((640, 589), bottom if bottom else "", anchor="mm", font=_FONT, fill=_BSZET_ORANGE)
+
+    uuid = str(uuid4())
+    img.save(os.path.join(path, uuid + ".jpg"))
+    return uuid

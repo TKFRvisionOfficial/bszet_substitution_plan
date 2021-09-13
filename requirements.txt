@@ -2,6 +2,7 @@ aiohttp
 # camelot-py[cv]
 Pillow
 pdf2image
+starlette
 fastapi
 python-multipart
 uvicorn
