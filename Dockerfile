@@ -5,8 +5,7 @@ RUN apk add --update --no-cache g++ poppler-utils freetype-dev zlib-dev libjpeg-
  && curl -fsSLo jetbrains-mono.zip https://github.com/JetBrains/JetBrainsMono/releases/download/v2.242/JetBrainsMono-2.242.zip \
  && unzip jetbrains-mono.zip \
  && apk del curl unzip \
- && mkdir /app \
- && mkdir /app/fonts \
+ && mkdir -p /app/fonts \
  && mv fonts/ttf/JetBrainsMono-Bold.ttf /app/fonts/JetBrainsMono-Bold.ttf \
  && rm -rf /tmp/fonts
 
