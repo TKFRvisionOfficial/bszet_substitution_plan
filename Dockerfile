@@ -2,11 +2,11 @@ FROM python:3.9-alpine
 
 WORKDIR /tmp/fonts
 RUN apk add --update --no-cache g++ poppler-utils freetype-dev zlib-dev libjpeg-turbo-dev curl unzip \
- && curl -fsSLo jetbrains-mono.zip https://github.com/JetBrains/JetBrainsMono/releases/download/v2.242/JetBrainsMono-2.242.zip \
- && unzip jetbrains-mono.zip \
+ && curl -fsSLo Anton.zip https://fonts.google.com/download?family=Anton \
+ && unzip Anton.zip \
  && apk del curl unzip \
  && mkdir -p /app/fonts \
- && mv fonts/ttf/JetBrainsMono-Bold.ttf /app/fonts/JetBrainsMono-Bold.ttf \
+ && mv Anton-Regular.ttf /app/fonts/Anton-Regular.ttf \
  && rm -rf /tmp/fonts
 
 WORKDIR /app
