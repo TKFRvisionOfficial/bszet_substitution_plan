@@ -8,7 +8,7 @@ on:
 
 env:
   GHCR_SLUG: ghcr.io/tkfrvisionofficial/pdf2img
-  DOCKER_PLATFORMS: linux/amd64,linux/arm/v7,linux/arm64/v8
+  DOCKER_PLATFORMS: linux/amd64 #,linux/arm/v7,linux/arm64/v8
 
 jobs:
   docker:
