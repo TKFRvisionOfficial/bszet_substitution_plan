@@ -6,7 +6,7 @@ RUN apt update \
  && python -m pip install --upgrade pip setuptools wheel \
  && curl -fsSLo Anton.zip https://fonts.google.com/download?family=Anton \
  && unzip Anton.zip \
- && apk del curl unzip \
+ && apt remove -y curl unzip \
  && mkdir -p /app/fonts \
  && mv Anton-Regular.ttf /app/fonts/Anton-Regular.ttf \
  && rm -rf /tmp/fonts
