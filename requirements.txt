@@ -1,5 +1,5 @@
 aiohttp
-# camelot-py[cv]
+camelot-py[cv]
 Pillow
 pdf2image
 starlette
@@ -7,3 +7,5 @@ fastapi
 python-multipart
 uvicorn
 aiofiles
+pandas
+colorama

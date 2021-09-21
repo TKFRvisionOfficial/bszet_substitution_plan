@@ -1,9 +1,14 @@
+import tempfile
+import camelot
 import pdf2image
 from PIL import Image, ImageDraw, ImageFont
+from starlette.responses import JSONResponse
 import io
 from uuid import uuid4
-from typing import List, Tuple
+from typing import List, Tuple, Any, Union
+from pandas import DataFrame
 import os
+import json
 
 _FONT_PATH = r"fonts/Anton-Regular.ttf"
 _FONT = ImageFont.truetype(_FONT_PATH, 80)
@@ -71,3 +76,46 @@ def create_cover_sheet(path: str = ".", top1: str = None, top2: str = None, bott
     uuid = str(uuid4())
     img.save(os.path.join(path, uuid + ".jpg"))
     return uuid
+
+
+def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
+    # i dont know if this is the right way of doing this
+    # the uploadfile object contains a file parameter which is a spooledtemporaryfile
+    # maybe there is some better way of converting the spooledtemporaryfile to a namedtemporaryfile
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
+        tmp_file.write(pdf)
+    try:
+        tables = camelot.read_pdf(
+            tmp_file.name,
+            pages="all",
+            flavor="stream",
+            row_tol=26,  # not perfect. issues often fixable here
+            table_areas=["30,480,790,100"]
+        )
+    except Exception:  # we need a better way of doing this like parsing every page one at a time...
+        return None
+    finally:
+        os.remove(tmp_file.name)
+
+    data_frames = [table.df for table in tables]
+    return data_frames
+
+
+class ToDictEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if hasattr(obj, "to_dict"):
+            return obj.to_dict()
+        return json.JSONEncoder.default(self, obj)
+
+
+class ToDictJSONResponse(JSONResponse):
+    def render(self, content: Any) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            sort_keys=False,  # i don't like sorting things 😂
+            separators=(",", ":"),
+            cls=ToDictEncoder
+        ).encode("utf-8")
