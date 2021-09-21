@@ -1,8 +1,9 @@
-FROM python:3.9-alpine
+FROM python:3.9-slim
 
 WORKDIR /tmp/fonts
-RUN apk add --update --no-cache g++ poppler-utils freetype-dev zlib-dev libjpeg-turbo-dev curl unzip \
- && pip install --upgrade pip setuptools wheel \
+RUN apt update \
+ && apt install -y g++ poppler-utils libfreetype-dev zlib1g-dev libjpeg-dev curl unzip \
+ && python -m pip install --upgrade pip setuptools wheel \
  && curl -fsSLo Anton.zip https://fonts.google.com/download?family=Anton \
  && unzip Anton.zip \
  && apk del curl unzip \
