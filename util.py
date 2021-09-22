@@ -9,6 +9,8 @@ from typing import List, Tuple, Any, Union
 from pandas import DataFrame
 import os
 import json
+import numpy as np
+import cv2
 
 _FONT_PATH = r"fonts/Anton-Regular.ttf"
 _FONT = ImageFont.truetype(_FONT_PATH, 80)
@@ -34,6 +36,11 @@ def convert_pdf_to_img(pdf: bytes) -> bytes:
     byte_array = io.BytesIO()
     result_img.save(byte_array, format="JPEG", dpi=(200, 200), quality=90)
     return byte_array.getvalue()
+
+
+def convert_pdf_to_opencv(pdf: bytes, dpi: int = 200) -> List[np.ndarray]:
+    images = pdf2image.convert_from_bytes(pdf, dpi)
+    return [cv2.cvtColor(np.array(image.convert("RGB")), cv2.COLOR_RGB2BGR) for image in images]
 
 
 def save_pdf_to_folder(pdf: bytes, path: str) -> List[str]:

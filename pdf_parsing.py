@@ -123,9 +123,9 @@ def _on_error(error: _TableFailure):
 def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 	colorama.init(autoreset=True)  # for color in error_msgs
 
-	data_dict = {}
 	cur_date = None
 	last_parsed = None
+	data_list = []
 	parsing_failures = []
 	for df_index, df in enumerate(data_frames, start=1):
 		# checking if table has proper size
@@ -177,7 +177,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 
 			# defining vars
 			classes = parse_results["classes"]
-			time = parse_results["time"]
+			lesson = parse_results["time"]
 			subject_change_from, subject_change_to = parse_results["subject"]
 			room_change_from, room_change_to = parse_results["room"]
 			teacher_change_from, teacher_change_to = parse_results["teacher"]
@@ -190,30 +190,28 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 				action = _guess_action(teacher_change_from, teacher_change_to)
 				guessed_action = True
 
-			# adding result to data_dict
-			if cur_date not in data_dict.keys():
-				data_dict[cur_date] = {}
-			for school_class in classes:
-				if school_class not in data_dict[cur_date].keys():
-					data_dict[cur_date][school_class] = {}
-				data_dict[cur_date][school_class][time] = {
-					"subject": {
-						"from": subject_change_from,
-						"to": subject_change_to
-					},
-					"room": {
-						"from": room_change_from,
-						"to": room_change_to
-					},
-					"action": action,
-					"guessedAction": guessed_action
-				}
+			data_list.append({
+				"classes": classes,
+				"subject": {
+					"from": subject_change_from,
+					"to": subject_change_to
+				},
+				"room": {
+					"from": room_change_from,
+					"to": room_change_to
+				},
+				"date": cur_date,
+				"lesson": lesson,
+				"message": row[5].strip().replace("\n", ""),
+				"action": action,
+				"guessedAction": guessed_action,
+			})
 
-			# saving parsed row for errors
-			last_parsed = {**parse_results, "message": row[5]}
+			# storing last parsed data_list
+			last_parsed = data_list[-1]
 
 	colorama.deinit()
 	return {
 		"failures": parsing_failures,
-		"data": data_dict
+		"data": data_list
 	}
