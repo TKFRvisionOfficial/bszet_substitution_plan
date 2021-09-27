@@ -77,7 +77,7 @@ def _parse_classes(class_cell: str) -> Union[List[str], None]:
 		return None
 
 
-def _parse_time(time_cell: str) -> Union[int, None]:
+def _parse_lesson(time_cell: str) -> Union[int, None]:
 	try:
 		if search_obj := re.search(r"\d(?=\.)", time_cell):  # not expecting 10
 			return int(search_obj.group(0))
@@ -149,7 +149,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 		for row_index, row in df.iloc[1:].iterrows():
 			"""
 			0: school class(es)
-			1: time
+			1: lesson
 			2: subject
 			3: room
 			4: teacher/stand-in
@@ -158,7 +158,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 			# parsing every cell in row except message
 			parse_results = {
 				"classes": _parse_classes(row[0]),
-				"time": _parse_time(row[1]),
+				"lesson": _parse_lesson(row[1]),
 				"subject": _parse_replacement(row[2], always_from=True),
 				"room": _parse_replacement(row[3], always_from=True),  # i am not sure about that. edge case?
 				"teacher": _parse_replacement(row[4])
@@ -177,7 +177,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 
 			# defining vars
 			classes = parse_results["classes"]
-			lesson = parse_results["time"]
+			lesson = parse_results["lesson"]
 			subject_change_from, subject_change_to = parse_results["subject"]
 			room_change_from, room_change_to = parse_results["room"]
 			teacher_change_from, teacher_change_to = parse_results["teacher"]
