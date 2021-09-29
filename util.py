@@ -104,7 +104,7 @@ def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
                     tmp_file.name,
                     pages=str(page_num),
                     flavor="stream",
-                    row_tol=26,  # not perfect. issues often fixable here
+                    row_tol=22,  # not perfect. issues often fixable here
                     table_areas=["30,480,790,100"]  # is the area big enough?
                 )
                 if len(parsed_tables) == 0:
