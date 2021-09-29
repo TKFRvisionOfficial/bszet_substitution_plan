@@ -11,12 +11,17 @@ import os
 import json
 import numpy as np
 import cv2
+from PyPDF2 import PdfFileReader
 
 _FONT_PATH = r"fonts/Anton-Regular.ttf"
 _FONT = ImageFont.truetype(_FONT_PATH, 80)
 _FONT_SMALL = ImageFont.truetype(_FONT_PATH, 30)
 _BSZET_ORANGE = (238, 104, 35)
 _BSZET_GREY = (130, 129, 125)
+
+
+class _NothingFound(Exception):
+    pass
 
 
 def convert_pdf_to_img(pdf: bytes) -> bytes:
@@ -89,18 +94,24 @@ def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
     # i dont know if this is the right way of doing this
     # the uploadfile object contains a file parameter which is a spooledtemporaryfile
     # maybe there is some better way of converting the spooledtemporaryfile to a namedtemporaryfile
+    tables = []
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
         tmp_file.write(pdf)
     try:
-        tables = camelot.read_pdf(
-            tmp_file.name,
-            pages="all",
-            flavor="stream",
-            row_tol=26,  # not perfect. issues often fixable here
-            table_areas=["30,480,790,100"]
-        )
-    except Exception:  # we need a better way of doing this like parsing every page one at a time...
-        return None
+        for page_num in range(1, PdfFileReader(io.BytesIO(pdf)).getNumPages()+1):
+            try:
+                parsed_tables = camelot.read_pdf(
+                    tmp_file.name,
+                    pages=str(page_num),
+                    flavor="stream",
+                    row_tol=26,  # not perfect. issues often fixable here
+                    table_areas=["30,480,790,100"]  # is the area big enough?
+                )
+                if len(parsed_tables) == 0:
+                    raise _NothingFound
+                tables.extend(parsed_tables)
+            except Exception:
+                continue  # need a way of informing of failure + fallback
     finally:
         os.remove(tmp_file.name)
 

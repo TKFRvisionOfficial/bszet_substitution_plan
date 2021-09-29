@@ -1,13 +1,16 @@
+import json
 from typing import Iterable, Union, Tuple, List
+import pandas as pd
 from pandas import DataFrame, Series
 import colorama
 import re
 from datetime import datetime
 
 
+pd.set_option('display.expand_frame_repr', False)
 _MESSAGE_DICT = {
 	"cancellation": ("Ausfall", "verschoben"),
-	"replacement": ("statt", "Stundentausch", "vorgezogen"),
+	"replacement": ("statt", "Stundentausch", "vorgezogen", "verlegt"),
 	"room-change": ("Raumänderung",)
 }
 
@@ -46,7 +49,7 @@ class _RowFailure(_TableFailure):
 
 
 def _parse_replacement(to_parse: str, always_from=False) -> Union[Tuple[Union[str, None], Union[str, None]], None]:
-	if search_obj := re.search(r"\+(?P<to>[A-zÄ-ü\-_\s]+)\((?P<from>[A-zÄ-ü\-_\s]+)\)", to_parse):
+	if search_obj := re.search(r"\+?(?P<to>[\w\s,Ä-ü\-]+)\((?P<from>[\w\s,Ä-ü\-]+)\)", to_parse):  # ","-botch
 		change_to = search_obj.groupdict()["to"]
 		change_from = search_obj.groupdict()["from"]
 		return re.sub(r"\s", "", change_from), re.sub(r"\s", "", change_to)
@@ -122,6 +125,7 @@ def _on_error(error: _TableFailure):
 
 def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 	colorama.init(autoreset=True)  # for color in error_msgs
+	print(data_frames)
 
 	cur_date = None
 	last_parsed = None
@@ -194,11 +198,13 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 				"classes": classes,
 				"subject": {
 					"from": subject_change_from,
-					"to": subject_change_to
+					# annoying botch
+					"to": subject_change_to if not (subject_change_to is None and action == "replacement") else subject_change_from
 				},
 				"room": {
 					"from": room_change_from,
-					"to": room_change_to
+					# annoying botch
+					"to": room_change_to if not (room_change_to is None and action == "replacement") else room_change_from
 				},
 				"date": cur_date,
 				"lesson": lesson,
@@ -209,6 +215,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 
 			# storing last parsed data_list
 			last_parsed = data_list[-1]
+			print(json.dumps(last_parsed, ensure_ascii=False, sort_keys=False, indent="\t"))
 
 	colorama.deinit()
 	return {
