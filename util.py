@@ -11,6 +11,7 @@ import os
 import json
 import numpy as np
 import cv2
+from img_to_dataframe import convert_table_img_to_list
 
 _FONT_PATH = r"fonts/Anton-Regular.ttf"
 _FONT = ImageFont.truetype(_FONT_PATH, 80)
@@ -99,12 +100,21 @@ def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
             row_tol=26,  # not perfect. issues often fixable here
             table_areas=["30,480,790,100"]
         )
+        data_frames = [table.df for table in tables]
     except Exception:  # we need a better way of doing this like parsing every page one at a time...
-        return None
+        data_frames = convert_pdf_to_dataframes_fallback(pdf)
     finally:
         os.remove(tmp_file.name)
 
-    data_frames = [table.df for table in tables]
+    print(data_frames)
+    return data_frames
+
+
+def convert_pdf_to_dataframes_fallback(pdf: bytes) -> Union[List[DataFrame], None]:
+    opencv_images = convert_pdf_to_opencv(pdf, 96)
+    data_frames = []
+    for img in opencv_images:
+        data_frames.append(convert_table_img_to_list(img))
     return data_frames
 
 
