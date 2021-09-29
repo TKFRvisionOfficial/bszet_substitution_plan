@@ -12,6 +12,7 @@ import json
 import numpy as np
 import cv2
 from PyPDF2 import PdfFileReader
+from img_to_dataframe import convert_table_img_to_list
 
 _FONT_PATH = r"fonts/Anton-Regular.ttf"
 _FONT = ImageFont.truetype(_FONT_PATH, 80)
@@ -99,23 +100,32 @@ def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
         tmp_file.write(pdf)
     try:
         for page_num in range(1, PdfFileReader(io.BytesIO(pdf)).getNumPages()+1):
-            try:
-                parsed_tables = camelot.read_pdf(
-                    tmp_file.name,
-                    pages=str(page_num),
-                    flavor="stream",
-                    row_tol=22,  # not perfect. issues often fixable here
-                    table_areas=["30,480,790,100"]  # is the area big enough?
-                )
-                if len(parsed_tables) == 0:
-                    raise _NothingFound
-                tables.extend(parsed_tables)
-            except Exception:
-                continue  # need a way of informing of failure + fallback
+            parsed_tables = camelot.read_pdf(
+                tmp_file.name,
+                pages=str(page_num),
+                flavor="stream",
+                row_tol=22,  # not perfect. issues often fixable here
+                table_areas=["30,480,790,100"]  # is the area big enough?
+            )
+            if len(parsed_tables) == 0:
+                raise _NothingFound
+            tables.extend(parsed_tables)
+        data_frames = [table.df for table in tables]
+    except Exception:
+            data_frames = convert_pdf_to_dataframes_fallback(pdf)
+
     finally:
         os.remove(tmp_file.name)
 
-    data_frames = [table.df for table in tables]
+    print(data_frames)
+    return data_frames
+
+
+def convert_pdf_to_dataframes_fallback(pdf: bytes) -> Union[List[DataFrame], None]:
+    opencv_images = convert_pdf_to_opencv(pdf, 96)
+    data_frames = []
+    for img in opencv_images:
+        data_frames.append(convert_table_img_to_list(img))
     return data_frames
 
 
