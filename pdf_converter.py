@@ -11,6 +11,7 @@ import asyncio
 
 
 auth_key = f'Bearer {os.environ["AUTH_KEY"]}'
+row_tol = int(os.environ.get("ROW_TOL", 20))
 image_path = "pictures"
 
 if not os.path.exists(image_path):
@@ -72,12 +73,12 @@ async def convert_to_json(background_task: BackgroundTasks, file: UploadFile = F
     #     response = [table.data for table in tables]
     # finally:
     #     background_task.add_task(os.remove, tmp_file.name)
-    return JSONResponse([df.to_dict() for df in convert_pdf_to_dataframes(await file.read())])
+    return JSONResponse([df.to_dict() for df in convert_pdf_to_dataframes(await file.read(), row_tol)])
 
 
 @app.post("/parse-pdf")
 async def parse_pdf(file: UploadFile = File(...)):
-    dfs = convert_pdf_to_dataframes(await file.read())
+    dfs = convert_pdf_to_dataframes(await file.read(), row_tol)
     if dfs is None:
         return Response("Parsing Failure", status_code=422)
     return ToDictJSONResponse(parse_dataframes(dfs))
