@@ -1,4 +1,4 @@
-import json
+# import json
 from typing import Iterable, Union, Tuple, List
 import pandas as pd
 from pandas import DataFrame, Series
@@ -125,7 +125,7 @@ def _on_error(error: _TableFailure):
 
 def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 	colorama.init(autoreset=True)  # for color in error_msgs
-	print(data_frames)
+	# print(data_frames)
 
 	cur_date = None
 	last_parsed = None
@@ -215,7 +215,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 
 			# storing last parsed data_list
 			last_parsed = data_list[-1]
-			print(json.dumps(last_parsed, ensure_ascii=False, sort_keys=False, indent="\t"))
+			# print(json.dumps(last_parsed, ensure_ascii=False, sort_keys=False, indent="\t"))
 
 	colorama.deinit()
 	return {
