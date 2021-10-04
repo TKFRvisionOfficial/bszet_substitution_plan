@@ -113,6 +113,7 @@ def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
                 tables = [parsed_table.df for parsed_table in parsed_tables]
                 data_frames.extend(tables)
             except Exception:
+                # ToDo: test exception with table from 2nd school week
                 data_frames.extend(convert_pdf_to_dataframes_fallback(pdf, page_num-1))
 
     finally:
