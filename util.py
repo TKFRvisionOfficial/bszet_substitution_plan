@@ -123,6 +123,7 @@ def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
 
 
 def convert_pdf_to_dataframes_fallback(pdf: bytes, page: int) -> Union[List[DataFrame], None]:
+    # ToDo: Converting the data every time is inefficent.
     opencv_images = convert_pdf_to_opencv(pdf, 96)
     img = opencv_images[page]
     return [convert_table_img_to_list(img)]
