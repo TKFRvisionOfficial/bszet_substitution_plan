@@ -1,13 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Title</title>
-</head>
-<body>
-    <form action="http://127.0.0.1:8000/pdf2img" enctype="multipart/form-data" method="post">
-        <input type="file" name="file" id="file" accept="application/pdf">
-        <input type="submit">
+  </head>
+  <body>
+    <script>
+      function send(event, path) {
+        event.preventDefault();
+        const data = new FormData(event.target);
+
+        fetch(`http://127.0.0.1:8000/${path}`, {
+          body: data,
+          method: "POST",
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${data.get("apikey")}`,
+          },
+        }).then(console.log);
+      }
+    </script>
+
+    <p>Results are printet in the brwoser console.</p>
+
+    <h3><code>pdf2img</code></h3>
+    <form onsubmit="send(event, 'pdf2img')">
+      <label>
+        Api Key:
+        <input type="text" name="apikey" id="apikey" />'
+      </label>
+      <br />
+      <input type="file" name="file" id="file" accept="application/pdf" />
+      <br />
+      <input type="submit" />
+    </form>
+
+    <h3><code>parse-pdf</code></h3>
+    <form onsubmit="send(event, 'parse-pdf')">
+      <label>
+        Api Key:
+        <input type="text" name="apikey" id="apikey" />'
+      </label>
+      <br />
+      <input type="file" name="file" id="file" accept="application/pdf" />
+      <br />
+      <input type="submit" />
     </form>
 </body>
 </html>

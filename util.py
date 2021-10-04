@@ -12,6 +12,7 @@ import json
 import numpy as np
 import cv2
 from PyPDF2 import PdfFileReader
+from img_to_dataframe import convert_table_img_to_list
 
 _FONT_PATH = r"fonts/Anton-Regular.ttf"
 _FONT = ImageFont.truetype(_FONT_PATH, 80)
@@ -94,7 +95,7 @@ def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
     # i dont know if this is the right way of doing this
     # the uploadfile object contains a file parameter which is a spooledtemporaryfile
     # maybe there is some better way of converting the spooledtemporaryfile to a namedtemporaryfile
-    tables = []
+    data_frames = []
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
         tmp_file.write(pdf)
     try:
@@ -109,14 +110,23 @@ def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
                 )
                 if len(parsed_tables) == 0:
                     raise _NothingFound
-                tables.extend(parsed_tables)
+                tables = [parsed_table.df for parsed_table in parsed_tables]
+                data_frames.extend(tables)
             except Exception:
-                continue  # need a way of informing of failure + fallback
+                # ToDo: test exception with table from 2nd school week
+                data_frames.extend(convert_pdf_to_dataframes_fallback(pdf, page_num-1))
+
     finally:
         os.remove(tmp_file.name)
 
-    data_frames = [table.df for table in tables]
     return data_frames
+
+
+def convert_pdf_to_dataframes_fallback(pdf: bytes, page: int) -> Union[List[DataFrame], None]:
+    # ToDo: Converting the data every time is inefficent.
+    opencv_images = convert_pdf_to_opencv(pdf, 96)
+    img = opencv_images[page]
+    return [convert_table_img_to_list(img)]
 
 
 class ToDictEncoder(json.JSONEncoder):

@@ -10,3 +10,4 @@ aiofiles
 pandas
 colorama
 numpy
+pytesseract
