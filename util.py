@@ -118,7 +118,6 @@ def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
     finally:
         os.remove(tmp_file.name)
 
-    print(data_frames)
     return data_frames
 
 
