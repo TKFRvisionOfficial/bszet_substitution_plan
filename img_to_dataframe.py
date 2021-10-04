@@ -33,6 +33,8 @@ def img_to_text(input_img):
     recongnized_text = recongnized_text.strip("\n\x0c ")
     recongnized_text = recongnized_text.replace("\n", " ")
 
+    # tesseract always recognizes T. instead of 7.
+    # should be fixed later
     if recongnized_text == "T.":
         recongnized_text = "7."
 
@@ -98,6 +100,8 @@ def convert_table_img_to_list(img: np.ndarray):
     # get img area where date can be
     part_img = img_gray[date_upper_pos:table_upper_pos-30, table_left_pos:table_right_pos-150]
     date = img_to_text(part_img)  # get date from image
+    # cv2 doesn't recognize Heading of Table because background is orange
+    # date+"\nKlasse" is intented because of compatibility to camelot
     table.insert(0, [date+"\nKlasse", "Stunde", "Fach", "Raum", "Lehrkraft: +Vertretung / (fehlt)", "Mitteilung"])
     
     data_frame = pd.DataFrame(table)
