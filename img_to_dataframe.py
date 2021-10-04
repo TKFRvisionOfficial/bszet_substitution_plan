@@ -43,9 +43,6 @@ def img_to_text(input_img):
 
 
 def convert_table_img_to_list(img: np.ndarray):
-    # define Path to pytesseract
-    pt.pytesseract.tesseract_cmd = r'Tesseract-OCR\tesseract.exe'
-
     img_color = img
     # convert image to gray
     img_gray = cv2.cvtColor(img_color, cv2.COLOR_BGR2GRAY)
