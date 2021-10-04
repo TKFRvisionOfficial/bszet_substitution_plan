@@ -2,7 +2,7 @@ FROM python:3.9-slim
 
 WORKDIR /tmp/fonts
 RUN apt update \
- && apt install -y g++ poppler-utils libfreetype-dev zlib1g-dev libjpeg-dev ffmpeg libsm6 libxext6 libgl1-mesa-glx curl unzip tesseract-ocr \
+ && apt install -y g++ poppler-utils libfreetype-dev zlib1g-dev libjpeg-dev ffmpeg libsm6 libxext6 libgl1-mesa-glx curl unzip tesseract-ocr tesseract-ocr-deu \
  && python -m pip install --upgrade pip setuptools wheel \
  && curl -fsSLo Anton.zip https://fonts.google.com/download?family=Anton \
  && unzip Anton.zip \
