@@ -34,9 +34,17 @@
       <br />
       <input type="submit" />
     </form>
-    <form action="http://127.0.0.1:8000/parse2img" enctype="multipart/form-data" method="post">
-        <input type="file" name="file" id="file" accept="application/pdf">
-        <input type="submit">
+
+    <h3><code>parse-pdf</code></h3>
+    <form onsubmit="send(event, 'parse-pdf')">
+      <label>
+        Api Key:
+        <input type="text" name="apikey" id="apikey" />'
+      </label>
+      <br />
+      <input type="file" name="file" id="file" accept="application/pdf" />
+      <br />
+      <input type="submit" />
     </form>
 </body>
 </html>
