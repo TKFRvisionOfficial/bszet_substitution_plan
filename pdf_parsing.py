@@ -1,4 +1,3 @@
-# import json
 from typing import Iterable, Union, Tuple, List
 import pandas as pd
 from pandas import DataFrame, Series
@@ -109,8 +108,9 @@ def _guess_action(teacher_change_from: Union[str, None], teacher_change_to: Unio
 		return "replacement"
 	elif teacher_change_from:
 		return "cancellation"
-	elif teacher_change_to:  # very bitchy one. i am not sure. normally this would be room-change.
-		return "cancellation"
+	elif teacher_change_to:
+		# return "cancellation"  # i dont know why i had that in the first place
+		return "room-change"
 	else:  # probably never the case
 		return "other"
 
@@ -148,9 +148,13 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 			parsing_failures.append(parsing_failure)
 			continue
 
+		# check if date has it's own column
+		# this is a botch
+		start_from = 1 if "\n" in df[0][0].strip() else 2
+
 		row_index: int
 		row: Series
-		for row_index, row in df.iloc[1:].iterrows():
+		for row_index, row in df.iloc[start_from:].iterrows():
 			"""
 			0: school class(es)
 			1: lesson
@@ -206,6 +210,10 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 					# annoying botch
 					"to": room_change_to if not (room_change_to is None and action == "replacement") else room_change_from
 				},
+				"teacher": {
+					"from": teacher_change_from,
+					"to": teacher_change_to
+				},
 				"date": cur_date,
 				"lesson": lesson,
 				"message": row[5].strip().replace("\n", ""),
@@ -215,7 +223,6 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 
 			# storing last parsed data_list
 			last_parsed = data_list[-1]
-			# print(json.dumps(last_parsed, ensure_ascii=False, sort_keys=False, indent="\t"))
 
 	colorama.deinit()
 	return {

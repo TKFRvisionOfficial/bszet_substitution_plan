@@ -91,7 +91,7 @@ def create_cover_sheet(path: str = ".", top1: str = None, top2: str = None, bott
     return uuid
 
 
-def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
+def convert_pdf_to_dataframes(pdf: bytes, row_tol) -> Union[List[DataFrame], None]:
     # i dont know if this is the right way of doing this
     # the uploadfile object contains a file parameter which is a spooledtemporaryfile
     # maybe there is some better way of converting the spooledtemporaryfile to a namedtemporaryfile
@@ -105,7 +105,7 @@ def convert_pdf_to_dataframes(pdf: bytes) -> Union[List[DataFrame], None]:
                     tmp_file.name,
                     pages=str(page_num),
                     flavor="stream",
-                    row_tol=22,  # not perfect. issues often fixable here
+                    row_tol=row_tol,  # not perfect. issues often fixable here
                     table_areas=["30,480,790,100"]  # is the area big enough?
                 )
                 if len(parsed_tables) == 0:
