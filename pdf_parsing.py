@@ -148,7 +148,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 			parsing_failures.append(parsing_failure)
 			continue
 
-		# check if date has it's own column
+		# check if date has it's own row
 		# this is a botch
 		start_from = 1 if "\n" in df[0][0].strip() else 2
 
@@ -198,6 +198,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 				action = _guess_action(teacher_change_from, teacher_change_to)
 				guessed_action = True
 
+			# creating response dict
 			data_list.append({
 				"classes": classes,
 				"subject": {

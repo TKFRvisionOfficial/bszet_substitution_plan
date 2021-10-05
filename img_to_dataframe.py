@@ -25,21 +25,21 @@ def img_to_text(input_img):
     input_img = cv2.threshold(input_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
     cv2.imwrite('D:/Dokumente/Programmieren/Python/testTableDetection/test.jpg', input_img)
     # convert image to text
-    recongnized_text = pt.image_to_string(input_img, lang='deu')
-    if recongnized_text == "\x0c":
-        recongnized_text = pt.image_to_string(input_img, lang='deu', config="--psm 7")
+    recognized_text = pt.image_to_string(input_img, lang='deu')
+    if recognized_text == "\x0c":
+        recognized_text = pt.image_to_string(input_img, lang='deu', config="--psm 7")
 
     # remove "\n", "\x0c", " "
-    recongnized_text = recongnized_text.strip("\n\x0c ")
-    recongnized_text = recongnized_text.replace("\n", " ")
+    recognized_text = recognized_text.strip("\n\x0c ")
+    recognized_text = recognized_text.replace("\n", " ")
 
     # ToDo: tesseract always recognizes T. instead of 7.
-    if recongnized_text == "T.":
-        recongnized_text = "7."
+    if recognized_text == "T.":
+        recognized_text = "7."
     # ToDo: tesseract always recognizes nn instead of empty cell
-    elif recongnized_text == "nn":
-        recongnized_text = ""
-    return recongnized_text
+    elif recognized_text == "nn":
+        recognized_text = ""
+    return recognized_text
 
 
 def convert_table_img_to_list(img: np.ndarray):
