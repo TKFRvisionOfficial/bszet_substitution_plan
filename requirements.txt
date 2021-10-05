@@ -5,7 +5,7 @@ pdf2image
 starlette
 fastapi
 python-multipart
-uvicorn
+uvicorn[standard]
 aiofiles
 pandas
 colorama
