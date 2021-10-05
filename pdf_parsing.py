@@ -8,8 +8,8 @@ from datetime import datetime
 
 pd.set_option('display.expand_frame_repr', False)
 _MESSAGE_DICT = {
-	"cancellation": ("Ausfall", "verschoben"),
-	"replacement": ("statt", "Stundentausch", "vorgezogen", "verlegt"),
+	"cancellation": ("Ausfall", "verschoben", "verlegt"),
+	"replacement": ("statt", "Stundentausch", "vorgezogen", "verlegt von"),
 	"room-change": ("Raumänderung",)
 }
 
@@ -150,7 +150,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 
 		# check if date has it's own row
 		# this is a botch
-		start_from = 1 if "\n" in df[0][0].strip() else 2
+		start_from = 1 if "\n" in df[0][0].strip() or not date else 2
 
 		row_index: int
 		row: Series
