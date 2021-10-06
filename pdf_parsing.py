@@ -8,8 +8,8 @@ from datetime import datetime
 
 pd.set_option('display.expand_frame_repr', False)
 _MESSAGE_DICT = {
-	"cancellation": ("Ausfall", "verschoben"),
-	"replacement": ("statt", "Stundentausch", "vorgezogen", "verlegt"),
+	"cancellation": ("Ausfall", "verschoben", "verlegt"),
+	"replacement": ("statt", "Stundentausch", "vorgezogen", "verlegt von"),
 	"room-change": ("Raumänderung",)
 }
 
@@ -150,7 +150,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 
 		# check if date has it's own row
 		# this is a botch
-		start_from = 1 if "\n" in df[0][0].strip() else 2
+		start_from = 1 if "\n" in df[0][0].strip() or not date else 2
 
 		row_index: int
 		row: Series
@@ -198,18 +198,37 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 				action = _guess_action(teacher_change_from, teacher_change_to)
 				guessed_action = True
 
+				# botch: lately there are unreadable rows that don't imply any changes (for example 05.10.2021 TGD 18 7.)
+				# I don't know what they are supposed to mean so we will skip them.
+				if action == "room-change" and room_change_to is None:
+					parsing_failure = _RowFailure(df_index, row_index, "unreadable", last_parsed)
+					_on_error(parsing_failure)
+					parsing_failures.append(parsing_failure)
+					continue
+
+			# botch: if a subject gets moved it gets set into subject_change_from
+			# because of the "always_from=True". this needs to be corrected
+			if subject_change_to is None and action == "replacement":
+				subject_change_to = subject_change_from
+				subject_change_from = None
+			if room_change_to is None and action == "replacement":
+				room_change_to = room_change_from
+				room_change_from = None
+
+			# change action "replacement" to "add" if subject_change_from empty
+			if action == "replacement" and subject_change_from is None:
+				action = "add"
+
 			# creating response dict
 			data_list.append({
 				"classes": classes,
 				"subject": {
 					"from": subject_change_from,
-					# annoying botch
-					"to": subject_change_to if not (subject_change_to is None and action == "replacement") else subject_change_from
+					"to": subject_change_to
 				},
 				"room": {
 					"from": room_change_from,
-					# annoying botch
-					"to": room_change_to if not (room_change_to is None and action == "replacement") else room_change_from
+					"to": room_change_to
 				},
 				"teacher": {
 					"from": teacher_change_from,
