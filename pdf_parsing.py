@@ -206,19 +206,29 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 					parsing_failures.append(parsing_failure)
 					continue
 
+			# botch: if a subject gets moved it gets set into subject_change_from
+			# because of the "always_from=True". this needs to be corrected
+			if subject_change_to is None and action == "replacement":
+				subject_change_to = subject_change_from
+				subject_change_from = None
+			if room_change_to is None and action == "replacement":
+				room_change_to = room_change_from
+				room_change_from = None
+
+			# change action "replacement" to "add" if subject_change_from empty
+			if action == "replacement" and subject_change_from is None:
+				action = "add"
+
 			# creating response dict
 			data_list.append({
 				"classes": classes,
 				"subject": {
-					# botch: if a subject gets moved it gets set into subject_change_from
-					# because of the "always_from=True". this needs to be corrected
-					"from": subject_change_from if not (subject_change_to is None and action == "replacement") else None,
-					"to": subject_change_to if not (subject_change_to is None and action == "replacement") else subject_change_from
+					"from": subject_change_from,
+					"to": subject_change_to
 				},
 				"room": {
-					# upper mentioned botch
-					"from": room_change_from if not (room_change_to is None and action == "replacement") else None,
-					"to": room_change_to if not (room_change_to is None and action == "replacement") else room_change_from
+					"from": room_change_from,
+					"to": room_change_to
 				},
 				"teacher": {
 					"from": teacher_change_from,
