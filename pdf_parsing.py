@@ -7,9 +7,10 @@ from datetime import datetime
 
 
 pd.set_option('display.expand_frame_repr', False)
+# We will need a way more advanced parsing system in the future.
 _MESSAGE_DICT = {
-	"cancellation": ("Ausfall", "verschoben", "verlegt"),
-	"replacement": ("statt", "Stundentausch", "vorgezogen", "verlegt von"),
+	"replacement": ("statt", "Stundentausch", "vorgezogen", "verlegt von", "verschoben von"),
+	"cancellation": ("Ausfall", "verschoben auf", "verlegt", "verschoben"),
 	"room-change": ("Raumänderung",)
 }
 
