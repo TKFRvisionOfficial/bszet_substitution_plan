@@ -1,5 +1,6 @@
 from typing import Iterable, Union, Tuple, List
 import pandas as pd
+import pandas.core.series
 from pandas import DataFrame, Series
 import colorama
 import re
@@ -67,9 +68,10 @@ def _parse_replacement(to_parse: str, always_from=False) -> Union[Tuple[Union[st
 		return None
 
 
-def _parse_date(cell_0: str) -> Union[str, None]:
-	if search_obj := re.search(r"\d\d\.\d\d\.\d\d\d\d", cell_0):
-		return datetime.strptime(search_obj.group(0), "%d.%m.%Y").strftime("%Y-%m-%d")
+def _parse_date(row_0: pandas.core.series.Series) -> Union[str, None]:
+	for cell in row_0:
+		if search_obj := re.search(r"\d\d\.\d\d\.\d\d\d\d", cell):
+			return datetime.strptime(search_obj.group(0), "%d.%m.%Y").strftime("%Y-%m-%d")
 	return None
 
 
@@ -134,6 +136,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 	parsing_failures = []
 	for df_index, df in enumerate(data_frames, start=1):
 		# checking if table has proper size
+		print(df)
 		if len(df.columns) != 6:
 			parsing_failure = _TableFailure(df_index, "amount of columns")
 			_on_error(parsing_failure)
@@ -141,7 +144,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 			continue
 
 		# the date is located in the first cell because of bad parsing
-		if date := _parse_date(df[0][0]):
+		if date := _parse_date(df[0]):
 			cur_date = date
 		elif not cur_date:
 			parsing_failure = _TableFailure(df_index, "date")
