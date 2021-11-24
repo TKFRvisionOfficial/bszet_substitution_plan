@@ -220,7 +220,8 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 				room_change_from = None
 
 			# change action "replacement" to "add" if subject_change_from empty
-			if action == "replacement" and subject_change_from is None:
+			# botch: checking guessed_action because sometimes both room and teacher changes
+			if action == "replacement" and subject_change_from is None and guessed_action:
 				action = "add"
 
 			# creating response dict
