@@ -136,7 +136,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 	parsing_failures = []
 	for df_index, df in enumerate(data_frames, start=1):
 		# checking if table has proper size
-		print(df)
+		# print(df)
 		if len(df.columns) != 6:
 			parsing_failure = _TableFailure(df_index, "amount of columns")
 			_on_error(parsing_failure)
@@ -220,12 +220,11 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 				room_change_from = None
 
 			# change action "replacement" to "add" if subject_change_from empty
-			# botch: checking guessed_action because sometimes both room and teacher changes
-			if action == "replacement" and subject_change_from is None:
-				if guessed_action:
-					action = "add"
-				else:
-					subject_change_from = subject_change_to
+			# botch: checking teacher_change_from because sometimes both room and teacher changes
+			if action == "replacement" and subject_change_from is None and teacher_change_from is None:
+				action = "add"
+			else:
+				subject_change_from = subject_change_to
 
 			# creating response dict
 			data_list.append({
