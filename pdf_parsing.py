@@ -136,7 +136,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 	parsing_failures = []
 	for df_index, df in enumerate(data_frames, start=1):
 		# checking if table has proper size
-		print(df)
+		# print(df)
 		if len(df.columns) != 6:
 			parsing_failure = _TableFailure(df_index, "amount of columns")
 			_on_error(parsing_failure)
