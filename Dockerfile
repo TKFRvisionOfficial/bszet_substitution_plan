@@ -7,6 +7,7 @@ RUN apt-get update \
  && curl -fsSLo Anton.zip https://fonts.google.com/download?family=Anton \
  && unzip Anton.zip \
  && apt-get purge -y curl unzip \
+ && rm -rf /var/lib/apt/lists/* \
  && mkdir -p /app/fonts \
  && mv Anton-Regular.ttf /app/fonts/Anton-Regular.ttf \
  && rm -rf /tmp/fonts
