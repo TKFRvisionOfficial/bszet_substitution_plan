@@ -37,7 +37,7 @@ def img_to_text(input_img):
     if recognized_text == "T.":
         recognized_text = "7."
     # ToDo: tesseract always recognizes nn instead of empty cell
-    elif recognized_text == "nn":
+    elif "nn" in recognized_text or  "L}" in recognized_text:
         recognized_text = ""
     return recognized_text
 
