@@ -11,3 +11,4 @@ pandas
 colorama
 numpy
 pytesseract
+opencv-contrib-python
