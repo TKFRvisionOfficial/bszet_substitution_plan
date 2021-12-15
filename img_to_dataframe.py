@@ -23,7 +23,6 @@ def img_to_text(input_img):
     (part_height, part_width) = input_img.shape[:2]
     input_img = cv2.resize(input_img, (part_width * 10, part_height * 10))
     input_img = cv2.threshold(input_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    cv2.imwrite('D:/Dokumente/Programmieren/Python/testTableDetection/test.jpg', input_img)
     # convert image to text
     recognized_text = pt.image_to_string(input_img, lang='deu')
     if recognized_text == "\x0c":
@@ -83,18 +82,19 @@ def convert_table_img_to_list(img: np.ndarray):
                 table_row = [cell_text]
             y_before = y
 
-            # get min/max value of y and x (table)
-            if x < table_left_pos:
-                table_left_pos = x
-            if y < table_upper_pos:
-                table_upper_pos = y
-            if x + w > table_right_pos:
-                table_right_pos = x + w
-            if y + h > table_lower_pos:
-                table_lower_pos = y + h
+            # empty table cells are not allowed to affect the determination of the table size
+            if cell_text != "":
+                # get min/max value of y and x (table)
+                if x < table_left_pos:
+                    table_left_pos = x
+                if y < table_upper_pos:
+                    table_upper_pos = y
+                if x + w > table_right_pos:
+                    table_right_pos = x + w
+                if y + h > table_lower_pos:
+                    table_lower_pos = y + h
     table.insert(0, table_row)  # insert last row
 
-    # cv2.imwrite("lol.png", img_gray[table_upper_pos:table_lower_pos, table_left_pos:table_right_pos])
     # get img area where date can be
     part_img = img_gray[date_upper_pos:table_upper_pos-30, table_left_pos:table_right_pos-150]
     date = img_to_text(part_img)  # get date from image
