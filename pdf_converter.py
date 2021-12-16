@@ -2,7 +2,7 @@ from typing import Iterable
 from fastapi import FastAPI, UploadFile, File, Response, Request
 from fastapi.responses import JSONResponse, FileResponse
 from starlette.background import BackgroundTasks
-from util import save_pdf_to_folder, create_cover_sheet, convert_pdf_to_dataframes, ToDictJSONResponse
+from util import save_pdf_to_folder, create_cover_sheet, get_today_pages, convert_pdf_to_dataframes, ToDictJSONResponse
 from pdf_parsing import parse_dataframes
 import os
 from glob import glob
@@ -91,5 +91,12 @@ async def parse_pdf(file: UploadFile = File(...)):
 
 @app.post("/store-pdf")
 async def store_pdf(file: UploadFile = File(...)):
+    data = await file.read()
+    to_store = get_today_pages(data, row_tol)
     with open(os.path.join(pdf_archive_path, datetime.now().strftime("%Y-%m-%d") + ".pdf"), "wb") as backup_file:
-        backup_file.write(await file.read())  # we should probably chunk that but im to lazy right now
+        if to_store is None:
+            backup_file.write(data)
+            return Response("Warning: couldn't parse date", status_code=422)
+        else:
+            backup_file.write(to_store)
+            return Response("OK", status_code=200)

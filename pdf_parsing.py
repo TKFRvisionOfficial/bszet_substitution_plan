@@ -68,7 +68,8 @@ def _parse_replacement(to_parse: str, always_from=False) -> Union[Tuple[Union[st
 		return None
 
 
-def _parse_date(row_0: pandas.core.series.Series) -> Union[str, None]:
+# todo refactor all the parsers into there own file
+def parse_date(row_0: pandas.core.series.Series) -> Union[str, None]:
 	for cell in row_0:
 		if search_obj := re.search(r"\d\d\.\d\d\.\d\d\d\d", cell):
 			return datetime.strptime(search_obj.group(0), "%d.%m.%Y").strftime("%Y-%m-%d")
@@ -144,7 +145,7 @@ def parse_dataframes(data_frames: Iterable[DataFrame]) -> dict:
 			continue
 
 		# the date is located in the first cell because of bad parsing
-		if date := _parse_date(df[0]):
+		if date := parse_date(df[0]):
 			cur_date = date
 		elif not cur_date:
 			parsing_failure = _TableFailure(df_index, "date")

@@ -11,8 +11,10 @@ import os
 import json
 import numpy as np
 import cv2
-from PyPDF2 import PdfFileReader
+from PyPDF2 import PdfFileReader, PdfFileWriter
 from img_to_dataframe import convert_table_img_to_list
+from pdf_parsing import parse_date
+from datetime import datetime
 
 _FONT_PATH = r"fonts/Anton-Regular.ttf"
 _FONT = ImageFont.truetype(_FONT_PATH, 80)
@@ -91,7 +93,7 @@ def create_cover_sheet(path: str = ".", top1: str = None, top2: str = None, bott
     return uuid
 
 
-def convert_pdf_to_dataframes(pdf: bytes, row_tol) -> Union[List[DataFrame], None]:
+def convert_pdf_to_dataframes(pdf: bytes, row_tol: int) -> Union[List[DataFrame], None]:
     # i dont know if this is the right way of doing this
     # the uploadfile object contains a file parameter which is a spooledtemporaryfile
     # maybe there is some better way of converting the spooledtemporaryfile to a namedtemporaryfile
@@ -127,6 +129,36 @@ def convert_pdf_to_dataframes_fallback(pdf: bytes, page: int) -> Union[List[Data
     opencv_images = convert_pdf_to_opencv(pdf, 96)
     img = opencv_images[page]
     return [convert_table_img_to_list(img)]
+
+
+def get_today_pages(pdf: bytes, row_tol: int) -> Union[bytes, None]:
+    data_frames = convert_pdf_to_dataframes(pdf, row_tol)
+    date_today = datetime.now().strftime("%Y-%m-%d")
+
+    start = None
+    end = None
+
+    for index, pdf_page in enumerate(data_frames):
+        if start is None and parse_date(pdf_page[0]) == date_today:
+            start = index
+        elif parse_date(pdf_page[0]) is not None:
+            end = index
+            break
+
+    if start is None:
+        return None
+    elif end is None:
+        end = len(data_frames)
+
+    pdf_reader = PdfFileReader(io.BytesIO(pdf))
+    pdf_writer = PdfFileWriter()
+
+    for page_num in range(start, end):
+        pdf_writer.addPage(pdf_reader.getPage(page_num))
+
+    output = io.BytesIO()
+    pdf_writer.write(output)
+    return output.getvalue()
 
 
 class ToDictEncoder(json.JSONEncoder):
