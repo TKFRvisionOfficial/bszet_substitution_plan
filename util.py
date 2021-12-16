@@ -150,7 +150,7 @@ def get_today_pages(pdf: bytes, row_tol: int) -> Union[bytes, None]:
 
     if start_page_index is None:
         return None
-    elif end_page_index is None:
+    if end_page_index is None:
         end_page_index = len(data_frames)
 
     with io.BytesIO(pdf) as pdf_input, io.BytesIO() as pdf_output:
