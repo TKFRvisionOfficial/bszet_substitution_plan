@@ -96,7 +96,13 @@ async def store_pdf(file: UploadFile = File(...)):
     with open(os.path.join(pdf_archive_path, datetime.now().strftime("%Y-%m-%d") + ".pdf"), "wb") as backup_file:
         if to_store is None:
             backup_file.write(data)
-            return Response("Warning: couldn't parse date", status_code=422)
+            return JSONResponse({
+                "status": "WARN",
+                "message": "The date of the PDF could not be parsed. Storing full pdf..."
+            })
         else:
             backup_file.write(to_store)
-            return Response("OK", status_code=200)
+            return JSONResponse({
+                "status": "OK",
+                "message": None
+            })

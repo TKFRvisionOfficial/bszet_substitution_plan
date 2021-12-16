@@ -41,9 +41,9 @@ def convert_pdf_to_img(pdf: bytes) -> bytes:
         y_offset += image.size[1]
 
     # annoying workaround
-    byte_array = io.BytesIO()
-    result_img.save(byte_array, format="JPEG", dpi=(200, 200), quality=90)
-    return byte_array.getvalue()
+    with io.BytesIO() as byte_array:
+        result_img.save(byte_array, format="JPEG", dpi=(200, 200), quality=90)
+        return byte_array.getvalue()
 
 
 def convert_pdf_to_opencv(pdf: bytes, dpi: int = 200) -> List[np.ndarray]:
@@ -101,22 +101,23 @@ def convert_pdf_to_dataframes(pdf: bytes, row_tol: int) -> Union[List[DataFrame]
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
         tmp_file.write(pdf)
     try:
-        for page_num in range(1, PdfFileReader(io.BytesIO(pdf)).getNumPages()+1):
-            try:
-                parsed_tables = camelot.read_pdf(
-                    tmp_file.name,
-                    pages=str(page_num),
-                    flavor="stream",
-                    row_tol=row_tol,  # not perfect. issues often fixable here
-                    table_areas=["30,480,790,100"]  # is the area big enough?
-                )
-                if len(parsed_tables) == 0:
-                    raise _NothingFound
-                tables = [parsed_table.df for parsed_table in parsed_tables]
-                data_frames.extend(tables)
-            except Exception:
-                # ToDo: test exception with table from 2nd school week
-                data_frames.extend(convert_pdf_to_dataframes_fallback(pdf, page_num-1))
+        with io.BytesIO(pdf) as pdf_stream:
+            for page_num in range(1, PdfFileReader(io.BytesIO(pdf_stream)).getNumPages()+1):
+                try:
+                    parsed_tables = camelot.read_pdf(
+                        tmp_file.name,
+                        pages=str(page_num),
+                        flavor="stream",
+                        row_tol=row_tol,  # not perfect. issues often fixable here
+                        table_areas=["30,480,790,100"]  # is the area big enough?
+                    )
+                    if len(parsed_tables) == 0:
+                        raise _NothingFound
+                    tables = [parsed_table.df for parsed_table in parsed_tables]
+                    data_frames.extend(tables)
+                except Exception:
+                    # ToDo: test exception with table from 2nd school week
+                    data_frames.extend(convert_pdf_to_dataframes_fallback(pdf, page_num-1))
 
     finally:
         os.remove(tmp_file.name)
@@ -133,32 +134,34 @@ def convert_pdf_to_dataframes_fallback(pdf: bytes, page: int) -> Union[List[Data
 
 def get_today_pages(pdf: bytes, row_tol: int) -> Union[bytes, None]:
     data_frames = convert_pdf_to_dataframes(pdf, row_tol)
+    if data_frames is None:
+        return None
+
     date_today = datetime.now().strftime("%Y-%m-%d")
+    start_page_index = None
+    end_page_index = None
 
-    start = None
-    end = None
-
-    for index, pdf_page in enumerate(data_frames):
-        if start is None and parse_date(pdf_page[0]) == date_today:
-            start = index
-        elif parse_date(pdf_page[0]) is not None:
-            end = index
+    for page_index, pdf_page in enumerate(data_frames):
+        if start_page_index is None and parse_date(pdf_page[0]) == date_today:
+            start_page_index = page_index
+        elif start_page_index is not None and parse_date(pdf_page[0]) is not None:
+            end_page_index = page_index
             break
 
-    if start is None:
+    if start_page_index is None:
         return None
-    elif end is None:
-        end = len(data_frames)
+    elif end_page_index is None:
+        end_page_index = len(data_frames)
 
-    pdf_reader = PdfFileReader(io.BytesIO(pdf))
-    pdf_writer = PdfFileWriter()
+    with io.BytesIO(pdf) as pdf_input, io.BytesIO() as pdf_output:
+        pdf_reader = PdfFileReader(pdf_input)
+        pdf_writer = PdfFileWriter()
 
-    for page_num in range(start, end):
-        pdf_writer.addPage(pdf_reader.getPage(page_num))
+        for page_num in range(start_page_index, end_page_index):
+            pdf_writer.addPage(pdf_reader.getPage(page_num))
 
-    output = io.BytesIO()
-    pdf_writer.write(output)
-    return output.getvalue()
+        pdf_writer.write(pdf_output)
+        return pdf_output.getvalue()
 
 
 class ToDictEncoder(json.JSONEncoder):
