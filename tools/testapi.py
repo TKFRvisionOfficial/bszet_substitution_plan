@@ -1,7 +1,7 @@
 import requests
 import json
 
-with open(r"C:\Users\tkfrv\Downloads\vertretungsplan-bgy06122021.pdf", "rb") as file:
-	response_text = requests.post("http://127.0.0.1:8000/parse-pdf", files={'file': file}, headers={"Authorization": "Bearer 123"}).content.decode("utf-8")
+with open(r"C:\Users\tkfrv\Downloads\nur_bilder.pdf", "rb") as file:
+	response_text = requests.post("URL", files={'file': file}, headers={"Authorization": "Bearer API_KEY"}).content.decode("utf-8")
 
 print(response_text)

@@ -7,12 +7,17 @@ from pdf_parsing import parse_dataframes
 import os
 from glob import glob
 import asyncio
+from datetime import datetime
 # import tempfile
 
 
 auth_key = f'Bearer {os.environ["AUTH_KEY"]}'
 row_tol = int(os.environ.get("ROW_TOL", 20))
 image_path = "pictures"
+pdf_archive_path = "vplan-archive"
+
+if not os.path.exists(pdf_archive_path):
+    os.mkdir(pdf_archive_path)
 
 if not os.path.exists(image_path):
     os.mkdir(image_path)
@@ -82,3 +87,9 @@ async def parse_pdf(file: UploadFile = File(...)):
     if dfs is None:
         return Response("Parsing Failure", status_code=422)
     return ToDictJSONResponse(parse_dataframes(dfs))
+
+
+@app.post("/store-pdf")
+async def store_pdf(file: UploadFile = File(...)):
+    with open(os.path.join(pdf_archive_path, datetime.now().strftime("%Y-%m-%d") + ".pdf"), "wb") as backup_file:
+        backup_file.write(await file.read())  # we should probably chunk that but im to lazy right now
