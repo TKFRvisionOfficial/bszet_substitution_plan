@@ -1,9 +1,11 @@
 import cv2
 import numpy as np
-import pytesseract as pt
+from easyocr import Reader
 import pandas as pd
 
 # from: https://medium.com/analytics-vidhya/how-to-detect-tables-in-images-using-opencv-and-python-6a0f15e560c3
+langs = ["de", "en"]
+reader = Reader(langs, gpu=False)
 
 
 def find_contours(img_gray):
@@ -21,23 +23,20 @@ def find_contours(img_gray):
 
 def img_to_text(input_img):
     (part_height, part_width) = input_img.shape[:2]
-    input_img = cv2.resize(input_img, (part_width * 10, part_height * 10))
-    input_img = cv2.threshold(input_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    # convert image to text
-    recognized_text = pt.image_to_string(input_img, lang='deu')
-    if recognized_text == "\x0c":
-        recognized_text = pt.image_to_string(input_img, lang='deu', config="--psm 7")
+    # preprocess image
+    ret, img_bin = cv2.threshold(input_img, 150, 255, cv2.THRESH_BINARY)
+    img_bin = cv2.resize(img_bin, (part_width*10, part_height*10))
+    img_blurry_dark = cv2.resize(cv2.blur(255-img_bin, (5, 5)), (part_width*2, part_height*2))
 
-    # remove "\n", "\x0c", " "
-    recognized_text = recognized_text.strip("\n\x0c ")
-    recognized_text = recognized_text.replace("\n", " ")
+    # recognize inverted image
+    results_dark = reader.readtext(img_blurry_dark, detail=0)
+    recognized_text = "".join(results_dark)
 
-    # ToDo: tesseract always recognizes T. instead of 7.
-    if recognized_text == "T.":
-        recognized_text = "7."
-    # ToDo: tesseract always recognizes nn or a lot of L} instead of empty cell
-    elif "nn" in recognized_text or "L}" in recognized_text:
-        recognized_text = ""
+    # be sure that lessons are enumerations with dot
+    if recognized_text.isdigit():
+        recognized_text += "."
+    # print(recognized_text)
+
     return recognized_text
 
 
@@ -61,7 +60,7 @@ def convert_table_img_to_list(img: np.ndarray):
     for cnt in contours:
         # get rects from contours
         x, y, w, h = cv2.boundingRect(cnt)
-        if 30 < h < 100:
+        if 60 < h < 150:
             x -= 2
             y -= 2
             w += 2
@@ -71,7 +70,8 @@ def convert_table_img_to_list(img: np.ndarray):
             part_img = img_gray[y:y + h, x:x + w]
             cell_text = img_to_text(part_img)  # extract text from image
             # text to exclude from output table
-            if cell_text in ["Vertretungsplan", "BGy", "/", "|", "I", "[", "DuBAS"]:
+            # ToDo: not good to check for "Vertretu" or "ngsplan"
+            if cell_text in ["Vertretu", "ngsplan", "ET", "BSZET", "Vertretungsplan", "BGy", "/", "|", "I", "[", "DuBAS"]:
                 date_upper_pos = y + h
                 continue
 
@@ -96,7 +96,7 @@ def convert_table_img_to_list(img: np.ndarray):
     table.insert(0, table_row)  # insert last row
 
     # get img area where date can be
-    part_img = img_gray[date_upper_pos:table_upper_pos-30, table_left_pos:table_right_pos-150]
+    part_img = img_gray[date_upper_pos:table_upper_pos-60, table_left_pos:table_right_pos-300]
     date = img_to_text(part_img)  # get date from image
     # ToDo:
     # cv2 doesn't recognize Heading of Table because background is orange
@@ -105,5 +105,6 @@ def convert_table_img_to_list(img: np.ndarray):
     
     data_frame = pd.DataFrame(table)
     data_frame = data_frame.fillna(value="")
+    # print(data_frame)
 
     return data_frame
