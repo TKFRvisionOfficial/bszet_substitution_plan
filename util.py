@@ -1,21 +1,21 @@
+import io
+import json
+import os
 import tempfile
+from typing import List, Tuple, Any, Union, NamedTuple, Generator
+from uuid import uuid4
+
 import camelot
+import cv2
+import numpy as np
 import pdf2image
 from PIL import Image, ImageDraw, ImageFont
-from starlette.responses import JSONResponse
-import io
-from uuid import uuid4
-from typing import List, Tuple, Any, Union, NamedTuple, Generator
-from pandas import DataFrame
-import os
-import json
-import numpy as np
-import cv2
 from PyPDF2 import PdfFileReader, PdfFileWriter
+from pandas import DataFrame
+from starlette.responses import JSONResponse
+
 from img_to_dataframe import convert_table_img_to_list
 from pdf_parsing import parse_date
-from datetime import datetime
-import collections
 
 _FONT_PATH = r"fonts/Anton-Regular.ttf"
 _FONT = ImageFont.truetype(_FONT_PATH, 80)
@@ -138,7 +138,7 @@ class _ResultPdfPage(NamedTuple):
     pdf_data: bytes
 
 
-def get_today_pages(pdf: bytes, row_tol: int) -> Generator[_ResultPdfPage]:
+def separate_pdf_into_days(pdf: bytes, row_tol: int) -> Generator[_ResultPdfPage]:
     class PdfPageDate(NamedTuple):
         date_str: str
         pdf_page_num_range: Tuple[int, int]

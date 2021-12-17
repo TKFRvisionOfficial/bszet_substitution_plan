@@ -2,7 +2,7 @@ from typing import Iterable
 from fastapi import FastAPI, UploadFile, File, Response, Request
 from fastapi.responses import JSONResponse, FileResponse
 from starlette.background import BackgroundTasks
-from util import save_pdf_to_folder, create_cover_sheet, get_today_pages, convert_pdf_to_dataframes, ToDictJSONResponse
+from util import save_pdf_to_folder, create_cover_sheet, separate_pdf_into_days, convert_pdf_to_dataframes, ToDictJSONResponse
 from pdf_parsing import parse_dataframes
 import os
 from glob import glob
@@ -94,7 +94,7 @@ async def parse_pdf(file: UploadFile = File(...)):
 async def store_pdf(file: UploadFile = File(...)):
     data = await file.read()
     try:
-        for pdf_files in get_today_pages(data, row_tol):
+        for pdf_files in separate_pdf_into_days(data, row_tol):
             with open(os.path.join(pdf_archive_path, pdf_files.date_str + ".pdf"), "wb") as backup_file:
                 backup_file.write(pdf_files.pdf_data)
                 return JSONResponse({
