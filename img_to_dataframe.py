@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from easyocr import Reader
 import pandas as pd
+import re
 
 # from: https://medium.com/analytics-vidhya/how-to-detect-tables-in-images-using-opencv-and-python-6a0f15e560c3
 langs = ["de", "en"]
@@ -32,12 +33,24 @@ def img_to_text(input_img):
     results_dark = reader.readtext(img_blurry_dark, detail=0)
     recognized_text = "".join(results_dark)
 
-    # be sure that lessons are enumerations with dot
-    if recognized_text.isdigit():
-        recognized_text += "."
     # print(recognized_text)
-
     return recognized_text
+
+
+def handle_parsing_mistakes(recognized_text, column):
+    revised_text = ""
+    # be sure that lessons are enumerations with dot (must start with one number)
+    if (search := re.search("^\d", recognized_text)) and column == 4:  # not expecting 10
+        revised_text = search.group(0)[0] + "."
+    # Fach endet mit I -> (Gruppe-1)
+    elif re.search("I$", recognized_text) and column == 3:
+        revised_text = recognized_text[:-1] + "1"
+    # Fach beginnt mit 1 -> In (Bsp.: IS)
+    elif re.search("^1", recognized_text) and column == 3:
+        revised_text = "I" + recognized_text[1:]
+    else:
+        revised_text = recognized_text
+    return revised_text
 
 
 def convert_table_img_to_list(img: np.ndarray):
@@ -69,6 +82,8 @@ def convert_table_img_to_list(img: np.ndarray):
             # select one table cell from image
             part_img = img_gray[y:y + h, x:x + w]
             cell_text = img_to_text(part_img)  # extract text from image
+            col = len(table_row) % 6
+            cell_text = handle_parsing_mistakes(cell_text, col)
             # text to exclude from output table
             # ToDo: not good to check for "Vertretu" or "ngsplan"
             if cell_text in ["Vertretu", "ngsplan", "ET", "BSZET", "Vertretungsplan", "BGy", "/", "|", "I", "[", "DuBAS"]:
