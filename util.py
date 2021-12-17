@@ -1,18 +1,21 @@
+import io
+import json
+import os
 import tempfile
+from typing import List, Tuple, Any, Union, NamedTuple, Generator
+from uuid import uuid4
+
 import camelot
+import cv2
+import numpy as np
 import pdf2image
 from PIL import Image, ImageDraw, ImageFont
-from starlette.responses import JSONResponse
-import io
-from uuid import uuid4
-from typing import List, Tuple, Any, Union
+from PyPDF2 import PdfFileReader, PdfFileWriter
 from pandas import DataFrame
-import os
-import json
-import numpy as np
-import cv2
-from PyPDF2 import PdfFileReader
+from starlette.responses import JSONResponse
+
 from img_to_dataframe import convert_table_img_to_list
+from pdf_parsing import parse_date
 
 _FONT_PATH = r"fonts/Anton-Regular.ttf"
 _FONT = ImageFont.truetype(_FONT_PATH, 80)
@@ -39,9 +42,9 @@ def convert_pdf_to_img(pdf: bytes) -> bytes:
         y_offset += image.size[1]
 
     # annoying workaround
-    byte_array = io.BytesIO()
-    result_img.save(byte_array, format="JPEG", dpi=(200, 200), quality=90)
-    return byte_array.getvalue()
+    with io.BytesIO() as byte_array:
+        result_img.save(byte_array, format="JPEG", dpi=(200, 200), quality=90)
+        return byte_array.getvalue()
 
 
 def convert_pdf_to_opencv(pdf: bytes, dpi: int = 200) -> List[np.ndarray]:
@@ -91,7 +94,7 @@ def create_cover_sheet(path: str = ".", top1: str = None, top2: str = None, bott
     return uuid
 
 
-def convert_pdf_to_dataframes(pdf: bytes, row_tol) -> Union[List[DataFrame], None]:
+def convert_pdf_to_dataframes(pdf: bytes, row_tol: int) -> Union[List[DataFrame], None]:
     # i dont know if this is the right way of doing this
     # the uploadfile object contains a file parameter which is a spooledtemporaryfile
     # maybe there is some better way of converting the spooledtemporaryfile to a namedtemporaryfile
@@ -99,22 +102,23 @@ def convert_pdf_to_dataframes(pdf: bytes, row_tol) -> Union[List[DataFrame], Non
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
         tmp_file.write(pdf)
     try:
-        for page_num in range(1, PdfFileReader(io.BytesIO(pdf)).getNumPages()+1):
-            try:
-                parsed_tables = camelot.read_pdf(
-                    tmp_file.name,
-                    pages=str(page_num),
-                    flavor="stream",
-                    row_tol=row_tol,  # not perfect. issues often fixable here
-                    table_areas=["30,480,790,100"]  # is the area big enough?
-                )
-                if len(parsed_tables) == 0:
-                    raise _NothingFound
-                tables = [parsed_table.df for parsed_table in parsed_tables]
-                data_frames.extend(tables)
-            except Exception:
-                # ToDo: test exception with table from 2nd school week
-                data_frames.extend(convert_pdf_to_dataframes_fallback(pdf, page_num-1))
+        with io.BytesIO(pdf) as pdf_stream:
+            for page_num in range(1, PdfFileReader(io.BytesIO(pdf_stream)).getNumPages()+1):
+                try:
+                    parsed_tables = camelot.read_pdf(
+                        tmp_file.name,
+                        pages=str(page_num),
+                        flavor="stream",
+                        row_tol=row_tol,  # not perfect. issues often fixable here
+                        table_areas=["30,480,790,100"]  # is the area big enough?
+                    )
+                    if len(parsed_tables) == 0:
+                        raise _NothingFound
+                    tables = [parsed_table.df for parsed_table in parsed_tables]
+                    data_frames.extend(tables)
+                except Exception:
+                    # ToDo: test exception with table from 2nd school week
+                    data_frames.extend(convert_pdf_to_dataframes_fallback(pdf, page_num-1))
 
     finally:
         os.remove(tmp_file.name)
@@ -127,6 +131,47 @@ def convert_pdf_to_dataframes_fallback(pdf: bytes, page: int) -> Union[List[Data
     opencv_images = convert_pdf_to_opencv(pdf, 96)
     img = opencv_images[page]
     return [convert_table_img_to_list(img)]
+
+
+class _ResultPdfPage(NamedTuple):
+    date_str: str
+    pdf_data: bytes
+
+
+def separate_pdf_into_days(pdf: bytes, row_tol: int) -> Generator[_ResultPdfPage]:
+    class PdfPageDate(NamedTuple):
+        date_str: str
+        pdf_page_num_range: Tuple[int, int]
+
+    data_frames = convert_pdf_to_dataframes(pdf, row_tol)
+    if data_frames is None:
+        raise ValueError
+
+    date = parse_date(data_frames[0][0])
+    if date is None:
+        raise ValueError
+
+    dates: List[PdfPageDate] = []
+    start_page_index = 0
+
+    # we could make a generator out of this but i don't think it needs it...
+    for page_index, pdf_page in enumerate(data_frames[1:]):
+        new_date = parse_date(pdf_page)  # let's hope this doesn't produce wrong results
+        if new_date is not None:
+            dates.append(PdfPageDate(date, (start_page_index, page_index)))
+            start_page_index = page_index
+    dates.append(PdfPageDate(date, (start_page_index, len(data_frames))))
+
+    with io.BytesIO(pdf) as pdf_input:
+        pdf_reader = PdfFileReader(pdf_input)
+
+        for pdf_page_date in dates:
+            with io.BytesIO() as pdf_output:
+                pdf_writer = PdfFileWriter()
+                for page_num in range(*pdf_page_date.pdf_page_num_range):
+                    pdf_writer.addPage(pdf_reader.getPage(page_num))
+                pdf_writer.write(pdf_output)
+                yield _ResultPdfPage(date, pdf_output.getvalue())
 
 
 class ToDictEncoder(json.JSONEncoder):

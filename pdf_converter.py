@@ -2,12 +2,13 @@ from typing import Iterable
 from fastapi import FastAPI, UploadFile, File, Response, Request
 from fastapi.responses import JSONResponse, FileResponse
 from starlette.background import BackgroundTasks
-from util import save_pdf_to_folder, create_cover_sheet, convert_pdf_to_dataframes, ToDictJSONResponse
+from util import save_pdf_to_folder, create_cover_sheet, separate_pdf_into_days, convert_pdf_to_dataframes, ToDictJSONResponse
 from pdf_parsing import parse_dataframes
 import os
 from glob import glob
 import asyncio
 from datetime import datetime
+
 # import tempfile
 
 
@@ -55,7 +56,7 @@ async def pdf2image(request: Request, background_task: BackgroundTasks, file: Up
         request.query_params.get("bottom-text", None)
     ))
     background_task.add_task(remove_later, uuids)
-    return JSONResponse(content=uuids,  status_code=200)
+    return JSONResponse(content=uuids, status_code=200)
 
 
 @app.get("/img/{uuid}")
@@ -91,5 +92,22 @@ async def parse_pdf(file: UploadFile = File(...)):
 
 @app.post("/store-pdf")
 async def store_pdf(file: UploadFile = File(...)):
-    with open(os.path.join(pdf_archive_path, datetime.now().strftime("%Y-%m-%d") + ".pdf"), "wb") as backup_file:
-        backup_file.write(await file.read())  # we should probably chunk that but im to lazy right now
+    data = await file.read()
+    try:
+        for pdf_files in separate_pdf_into_days(data, row_tol):
+            with open(os.path.join(pdf_archive_path, pdf_files.date_str + ".pdf"), "wb") as backup_file:
+                backup_file.write(pdf_files.pdf_data)
+                return JSONResponse({
+                    "status": "OK",
+                    "message": None
+                })
+    except ValueError:
+        # maybe add time?
+        with open(os.path.join(pdf_archive_path, datetime.now().strftime("failure_%Y-%m-%d") + ".pdf"), "wb") \
+                as backup_file:
+            backup_file.write(data)
+            return JSONResponse({
+                "status": "WARN",
+                "message": "The date of the PDF could not be parsed. Storing full pdf..."
+            })
+
