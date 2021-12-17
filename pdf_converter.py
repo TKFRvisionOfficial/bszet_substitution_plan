@@ -8,6 +8,7 @@ import os
 from glob import glob
 import asyncio
 from datetime import datetime
+
 # import tempfile
 
 
@@ -55,7 +56,7 @@ async def pdf2image(request: Request, background_task: BackgroundTasks, file: Up
         request.query_params.get("bottom-text", None)
     ))
     background_task.add_task(remove_later, uuids)
-    return JSONResponse(content=uuids,  status_code=200)
+    return JSONResponse(content=uuids, status_code=200)
 
 
 @app.get("/img/{uuid}")
@@ -92,17 +93,21 @@ async def parse_pdf(file: UploadFile = File(...)):
 @app.post("/store-pdf")
 async def store_pdf(file: UploadFile = File(...)):
     data = await file.read()
-    to_store = get_today_pages(data, row_tol)
-    with open(os.path.join(pdf_archive_path, datetime.now().strftime("%Y-%m-%d") + ".pdf"), "wb") as backup_file:
-        if to_store is None:
+    try:
+        for pdf_files in get_today_pages(data, row_tol):
+            with open(os.path.join(pdf_archive_path, pdf_files.date_str + ".pdf"), "wb") as backup_file:
+                backup_file.write(pdf_files.pdf_data)
+                return JSONResponse({
+                    "status": "OK",
+                    "message": None
+                })
+    except ValueError:
+        # maybe add time?
+        with open(os.path.join(pdf_archive_path, datetime.now().strftime("failure_%Y-%m-%d") + ".pdf"), "wb") \
+                as backup_file:
             backup_file.write(data)
             return JSONResponse({
                 "status": "WARN",
                 "message": "The date of the PDF could not be parsed. Storing full pdf..."
             })
-        else:
-            backup_file.write(to_store)
-            return JSONResponse({
-                "status": "OK",
-                "message": None
-            })
+

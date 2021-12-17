@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 from starlette.responses import JSONResponse
 import io
 from uuid import uuid4
-from typing import List, Tuple, Any, Union
+from typing import List, Tuple, Any, Union, NamedTuple, Generator
 from pandas import DataFrame
 import os
 import json
@@ -15,6 +15,7 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 from img_to_dataframe import convert_table_img_to_list
 from pdf_parsing import parse_date
 from datetime import datetime
+import collections
 
 _FONT_PATH = r"fonts/Anton-Regular.ttf"
 _FONT = ImageFont.truetype(_FONT_PATH, 80)
@@ -132,36 +133,45 @@ def convert_pdf_to_dataframes_fallback(pdf: bytes, page: int) -> Union[List[Data
     return [convert_table_img_to_list(img)]
 
 
-def get_today_pages(pdf: bytes, row_tol: int) -> Union[bytes, None]:
+class _ResultPdfPage(NamedTuple):
+    date_str: str
+    pdf_data: bytes
+
+
+def get_today_pages(pdf: bytes, row_tol: int) -> Generator[_ResultPdfPage]:
+    class PdfPageDate(NamedTuple):
+        date_str: str
+        pdf_page_num_range: Tuple[int, int]
+
     data_frames = convert_pdf_to_dataframes(pdf, row_tol)
     if data_frames is None:
-        return None
+        raise ValueError
 
-    date_today = datetime.now().strftime("%Y-%m-%d")
-    start_page_index = None
-    end_page_index = None
+    date = parse_date(data_frames[0][0])
+    if date is None:
+        raise ValueError
 
-    for page_index, pdf_page in enumerate(data_frames):
-        if start_page_index is None and parse_date(pdf_page[0]) == date_today:
+    dates: List[PdfPageDate] = []
+    start_page_index = 0
+
+    # we could make a generator out of this but i don't think it needs it...
+    for page_index, pdf_page in enumerate(data_frames[1:]):
+        new_date = parse_date(pdf_page)  # let's hope this doesn't produce wrong results
+        if new_date is not None:
+            dates.append(PdfPageDate(date, (start_page_index, page_index)))
             start_page_index = page_index
-        elif start_page_index is not None and parse_date(pdf_page[0]) is not None:
-            end_page_index = page_index
-            break
+    dates.append(PdfPageDate(date, (start_page_index, len(data_frames))))
 
-    if start_page_index is None:
-        return None
-    if end_page_index is None:
-        end_page_index = len(data_frames)
-
-    with io.BytesIO(pdf) as pdf_input, io.BytesIO() as pdf_output:
+    with io.BytesIO(pdf) as pdf_input:
         pdf_reader = PdfFileReader(pdf_input)
-        pdf_writer = PdfFileWriter()
 
-        for page_num in range(start_page_index, end_page_index):
-            pdf_writer.addPage(pdf_reader.getPage(page_num))
-
-        pdf_writer.write(pdf_output)
-        return pdf_output.getvalue()
+        for pdf_page_date in dates:
+            with io.BytesIO() as pdf_output:
+                pdf_writer = PdfFileWriter()
+                for page_num in range(*pdf_page_date.pdf_page_num_range):
+                    pdf_writer.addPage(pdf_reader.getPage(page_num))
+                pdf_writer.write(pdf_output)
+                yield _ResultPdfPage(date, pdf_output.getvalue())
 
 
 class ToDictEncoder(json.JSONEncoder):
