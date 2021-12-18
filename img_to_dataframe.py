@@ -85,10 +85,15 @@ def convert_table_img_to_list(img: np.ndarray):
             col = len(table_row) % 6
             cell_text = handle_parsing_mistakes(cell_text, col)
             # text to exclude from output table
-            # ToDo: not good to check for "Vertretu" or "ngsplan"
-            if cell_text in ["Vertretu", "ngsplan", "ET", "BSZET", "Vertretungsplan", "BGy", "/", "|", "I", "[", "DuBAS"]:
-                date_upper_pos = y + h
-                continue
+            excluded_from_table = ["bszet", "vertretungsplan", "bgy", "/", "|", "i", "[", "dubas"]
+            exclude = False
+            for ex in excluded_from_table:  # iterate all strings to be excluded
+                if cell_text.lower() in ex and cell_text:  # text must contain anything
+                    date_upper_pos = y + h  # set top position of date-area
+                    exclude = True
+                    break  # leave this for-loop
+            if exclude:
+                continue  # continue to next cell
 
             if y_before == y or y_before == 0:  # same line as cell before
                 table_row.insert(0, cell_text)
