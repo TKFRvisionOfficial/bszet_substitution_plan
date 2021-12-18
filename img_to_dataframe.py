@@ -38,16 +38,19 @@ def img_to_text(input_img):
 
 
 def handle_parsing_mistakes(recognized_text, column):
-    revised_text = ""
     # be sure that lessons are enumerations with dot (must start with one number)
     if (search := re.search("^\d", recognized_text)) and column == 4:  # not expecting 10
         revised_text = search.group(0)[0] + "."
-    # Fach endet mit I -> (Gruppe-1)
-    elif re.search("I$", recognized_text) and column == 3:
-        revised_text = recognized_text[:-1] + "1"
-    # Fach beginnt mit 1 -> In (Bsp.: IS)
-    elif re.search("^1", recognized_text) and column == 3:
-        revised_text = "I" + recognized_text[1:]
+    # lesson ends with I -> (Gruppe-1)
+    # or lesson starts with 1 -> I (e.g. IS)
+    elif column == 3:
+        rev = re.sub("^1", "I", recognized_text)
+        revised_text = re.sub("I$", "1", rev)
+    # replace 8 with B (for room)
+    elif column == 2:
+        rev = re.sub("^8", "B", recognized_text)
+        rev = re.sub("^\+8", "+B", rev)
+        revised_text = re.sub("\(8", "(B", rev)
     else:
         revised_text = recognized_text
     return revised_text
