@@ -86,6 +86,13 @@ def handle_parsing_mistakes(recognized_text, column):
         rev = re.sub("^8", "B", recognized_text)
         rev = re.sub("^\+8", "+B", rev)
         revised_text = re.sub("\(8", "(B", rev)
+    elif column == 1:
+        rev = re.sub("Dr(_|-|\s)", "Dr.", recognized_text)
+        rev = re.sub("Dr\.", "Dr. ", rev)
+        revised_text = re.sub("\s+", " ", rev)
+    elif column == 0:
+        rev = re.sub("Std(_|-)", "Std.", recognized_text)
+        revised_text = re.sub("(-|_)\sStd", ". Std", rev)
     else:
         revised_text = recognized_text
     return revised_text
