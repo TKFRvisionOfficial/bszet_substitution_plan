@@ -1,9 +1,13 @@
 import cv2
 import numpy as np
-import pytesseract as pt
+from easyocr import Reader
 import pandas as pd
+import re
+from math import isclose
 
 # from: https://medium.com/analytics-vidhya/how-to-detect-tables-in-images-using-opencv-and-python-6a0f15e560c3
+langs = ["de", "en"]
+reader = Reader(langs, gpu=False)
 
 
 def find_contours(img_gray):
@@ -19,26 +23,79 @@ def find_contours(img_gray):
     return contours
 
 
+def sort_and_join_texts(easyocr_result):
+    # sort recognized text by coordinates for right text order
+    sorted_by_xaxes = sorted(easyocr_result, key=lambda k: k[0][0][0])
+    # get all y-coordinates of texts
+    all_y_coordinates = [coordinate[0][0][1] for coordinate in sorted_by_xaxes]
+    # list for coordinates of lines, smallest coordinate is given
+    line_coordinates = [min(all_y_coordinates)]
+    # filter y-coordinates by close values (get all lines)
+    for y in all_y_coordinates:
+        close_to_existing_value = False
+        for line in line_coordinates:
+            if isclose(y, line, abs_tol=15):
+                close_to_existing_value = True
+                break
+        if not close_to_existing_value:
+            line_coordinates.append(y)
+    # sort lines
+    line_coordinates = sorted(line_coordinates)
+
+    # sort texts into 2D-list
+    sorted_text = [[] for _ in range(len(line_coordinates))]
+    for i, y in enumerate(all_y_coordinates):  # iterate all recognized texts
+        for line, line_coordinate in enumerate(line_coordinates):  # iterate all text-lines
+            if isclose(y, line_coordinate, abs_tol=15):  # match text to line
+                sorted_text[line].append(sorted_by_xaxes[i][1])  # insert text into list
+
+    recognized_text = " ".join(item for line in sorted_text for item in line)
+
+    return recognized_text
+
+
 def img_to_text(input_img):
     (part_height, part_width) = input_img.shape[:2]
-    input_img = cv2.resize(input_img, (part_width * 10, part_height * 10))
-    input_img = cv2.threshold(input_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    # convert image to text
-    recognized_text = pt.image_to_string(input_img, lang='deu')
-    if recognized_text == "\x0c":
-        recognized_text = pt.image_to_string(input_img, lang='deu', config="--psm 7")
+    # preprocess image
+    ret, img_bin = cv2.threshold(input_img, 150, 255, cv2.THRESH_BINARY)
+    img_bin = cv2.resize(img_bin, (part_width * 10, part_height * 10))
+    img_blurry_dark = cv2.resize(cv2.blur(255 - img_bin, (5, 5)), (part_width * 2, part_height * 2))
 
-    # remove "\n", "\x0c", " "
-    recognized_text = recognized_text.strip("\n\x0c ")
-    recognized_text = recognized_text.replace("\n", " ")
+    # recognize inverted image
+    results_dark = reader.readtext(img_blurry_dark)
 
-    # ToDo: tesseract always recognizes T. instead of 7.
-    if recognized_text == "T.":
-        recognized_text = "7."
-    # ToDo: tesseract always recognizes nn or a lot of L} instead of empty cell
-    elif "nn" in recognized_text or "L}" in recognized_text:
+    if results_dark:
+        recognized_text = sort_and_join_texts(results_dark)  # sort texts
+    else:  # no text recognized
         recognized_text = ""
+
     return recognized_text
+
+
+def handle_parsing_mistakes(recognized_text, column):
+    # be sure that lessons are enumerations with dot (must start with one number)
+    if (search := re.search("^\d", recognized_text)) and column == 4:  # not expecting 10
+        revised_text = search.group(0)[0] + "."
+    # lesson ends with I -> (Gruppe-1)
+    # or lesson starts with 1 -> I (e.g. IS)
+    elif column == 3:
+        rev = re.sub("^1", "I", recognized_text)
+        revised_text = re.sub("I$", "1", rev)
+    # replace 8 with B (for room)
+    elif column == 2:
+        rev = re.sub("^8", "B", recognized_text)
+        rev = re.sub("^\+8", "+B", rev)
+        revised_text = re.sub("\(8", "(B", rev)
+    elif column == 1:
+        rev = re.sub("Dr(_|-|\s)", "Dr.", recognized_text)
+        rev = re.sub("Dr\.", "Dr. ", rev)
+        revised_text = re.sub("\s+", " ", rev)
+    elif column == 0:
+        rev = re.sub("Std(_|-)", "Std.", recognized_text)
+        revised_text = re.sub("(-|_)\sStd", ". Std", rev)
+    else:
+        revised_text = recognized_text
+    return revised_text
 
 
 def convert_table_img_to_list(img: np.ndarray):
@@ -61,7 +118,7 @@ def convert_table_img_to_list(img: np.ndarray):
     for cnt in contours:
         # get rects from contours
         x, y, w, h = cv2.boundingRect(cnt)
-        if 30 < h < 100:
+        if 60 < h < 150:
             x -= 2
             y -= 2
             w += 2
@@ -70,10 +127,18 @@ def convert_table_img_to_list(img: np.ndarray):
             # select one table cell from image
             part_img = img_gray[y:y + h, x:x + w]
             cell_text = img_to_text(part_img)  # extract text from image
+            col = len(table_row) % 6
+            cell_text = handle_parsing_mistakes(cell_text, col)
             # text to exclude from output table
-            if cell_text in ["Vertretungsplan", "BGy", "/", "|", "I", "[", "DuBAS"]:
-                date_upper_pos = y + h
-                continue
+            excluded_from_table = ["bszet", "vertretungsplan", "bgy", "/", "|", "i", "[", "dubas"]
+            exclude = False
+            for ex in excluded_from_table:  # iterate all strings to be excluded
+                if cell_text.lower() in ex and cell_text:  # text must contain anything
+                    date_upper_pos = y + h  # set top position of date-area
+                    exclude = True
+                    break  # leave this for-loop
+            if exclude:
+                continue  # continue to next cell
 
             if y_before == y or y_before == 0:  # same line as cell before
                 table_row.insert(0, cell_text)
@@ -96,14 +161,15 @@ def convert_table_img_to_list(img: np.ndarray):
     table.insert(0, table_row)  # insert last row
 
     # get img area where date can be
-    part_img = img_gray[date_upper_pos:table_upper_pos-30, table_left_pos:table_right_pos-150]
+    part_img = img_gray[date_upper_pos:table_upper_pos - 60, table_left_pos:table_right_pos - 300]
     date = img_to_text(part_img)  # get date from image
     # ToDo:
     # cv2 doesn't recognize Heading of Table because background is orange
-    # date+"\nKlasse" is intented because of compatibility to camelot
-    table.insert(0, [date+"\nKlasse", "Stunde", "Fach", "Raum", "Lehrkraft: +Vertretung / (fehlt)", "Mitteilung"])
-    
+    # date+"\nKlasse" is intended because of compatibility to camelot
+    table.insert(0, [date + "\nKlasse", "Stunde", "Fach", "Raum", "Lehrkraft: +Vertretung / (fehlt)", "Mitteilung"])
+
     data_frame = pd.DataFrame(table)
     data_frame = data_frame.fillna(value="")
+    # print(data_frame)
 
     return data_frame
