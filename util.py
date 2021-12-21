@@ -103,7 +103,7 @@ def convert_pdf_to_dataframes(pdf: bytes, row_tol: int) -> Union[List[DataFrame]
         tmp_file.write(pdf)
     try:
         with io.BytesIO(pdf) as pdf_stream:
-            for page_num in range(1, PdfFileReader(io.BytesIO(pdf_stream)).getNumPages()+1):
+            for page_num in range(1, PdfFileReader(pdf_stream).getNumPages()+1):
                 try:
                     parsed_tables = camelot.read_pdf(
                         tmp_file.name,
@@ -138,7 +138,7 @@ class _ResultPdfPage(NamedTuple):
     pdf_data: bytes
 
 
-def separate_pdf_into_days(pdf: bytes, row_tol: int) -> Generator[_ResultPdfPage]:
+def separate_pdf_into_days(pdf: bytes, row_tol: int) -> Generator[_ResultPdfPage, None, None]:
     class PdfPageDate(NamedTuple):
         date_str: str
         pdf_page_num_range: Tuple[int, int]
