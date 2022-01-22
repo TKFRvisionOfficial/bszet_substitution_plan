@@ -8,6 +8,8 @@ import os
 from glob import glob
 import asyncio
 from datetime import datetime
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+import sentry_sdk
 
 # import tempfile
 
@@ -27,6 +29,18 @@ else:
         os.remove(_file)
 
 app = FastAPI()
+
+if "SENTRY_DSN" in os.environ:
+    sentry_sdk.init(
+        dsn=os.environ["SENTRY_DSN"],  # CHANGE HERE
+        environment=os.getenv('ENV', 'dev'),  # You should read it from environment variable
+    )
+
+    try:
+        app.add_middleware(SentryAsgiMiddleware)
+    except Exception:
+        # pass silently if the Sentry integration failed
+        pass
 
 
 async def remove_later(uuids: Iterable[str]):
