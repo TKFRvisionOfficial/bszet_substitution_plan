@@ -163,8 +163,6 @@ def separate_pdf_into_days(pdf: bytes, row_tol: int) -> Generator[_ResultPdfPage
             date = new_date
     dates.append(PdfPageDate(date, (start_page_index, len(data_frames))))
 
-    print(dates)
-
     with io.BytesIO(pdf) as pdf_input:
         pdf_reader = PdfFileReader(pdf_input)
 
