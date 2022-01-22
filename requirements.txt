@@ -12,3 +12,4 @@ colorama
 numpy
 opencv-contrib-python
 easyocr
+sentry-sdk
