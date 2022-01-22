@@ -160,6 +160,7 @@ def separate_pdf_into_days(pdf: bytes, row_tol: int) -> Generator[_ResultPdfPage
         if new_date is not None:
             dates.append(PdfPageDate(date, (start_page_index, page_index)))
             start_page_index = page_index
+            date = new_date
     dates.append(PdfPageDate(date, (start_page_index, len(data_frames))))
 
     with io.BytesIO(pdf) as pdf_input:
@@ -171,7 +172,7 @@ def separate_pdf_into_days(pdf: bytes, row_tol: int) -> Generator[_ResultPdfPage
                 for page_num in range(*pdf_page_date.pdf_page_num_range):
                     pdf_writer.addPage(pdf_reader.getPage(page_num))
                 pdf_writer.write(pdf_output)
-                yield _ResultPdfPage(date, pdf_output.getvalue())
+                yield _ResultPdfPage(pdf_page_date.date_str, pdf_output.getvalue())
 
 
 class ToDictEncoder(json.JSONEncoder):
