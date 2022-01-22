@@ -96,11 +96,13 @@ async def store_pdf(file: UploadFile = File(...)):
     try:
         for pdf_files in separate_pdf_into_days(data, row_tol):
             with open(os.path.join(pdf_archive_path, pdf_files.date_str + ".pdf"), "wb") as backup_file:
+                print(pdf_files.date_str)
                 backup_file.write(pdf_files.pdf_data)
-                return JSONResponse({
-                    "status": "OK",
-                    "message": None
-                })
+            print("hurensohn")
+        return JSONResponse({
+            "status": "OK",
+            "message": None
+        })
     except ValueError:
         # maybe add time?
         with open(os.path.join(pdf_archive_path, datetime.now().strftime("failure_%Y-%m-%d") + ".pdf"), "wb") \
