@@ -155,7 +155,7 @@ def separate_pdf_into_days(pdf: bytes, row_tol: int) -> Generator[_ResultPdfPage
     start_page_index = 0
 
     # we could make a generator out of this but i don't think it needs it...
-    for page_index, pdf_page in enumerate(data_frames[1:]):
+    for page_index, pdf_page in enumerate(data_frames[1:], start=1):
         new_date = parse_date(pdf_page[0])  # let's hope this doesn't produce wrong results
         if new_date is not None:
             dates.append(PdfPageDate(date, (start_page_index, page_index)))
