@@ -1,15 +1,34 @@
+#  bszet_substitution_plan
+#  Copyright (C) 2022 TKFRvision, PBahner, MarcelCoding
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Affero General Public License as published
+#  by the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Affero General Public License for more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import asyncio
+import os
+from datetime import datetime
+from glob import glob
 from typing import Iterable
+
+import sentry_sdk
 from fastapi import FastAPI, UploadFile, File, Response, Request
 from fastapi.responses import JSONResponse, FileResponse
-from starlette.background import BackgroundTasks
-from util import save_pdf_to_folder, create_cover_sheet, separate_pdf_into_days, convert_pdf_to_dataframes, ToDictJSONResponse
-from pdf_parsing import parse_dataframes
-import os
-from glob import glob
-import asyncio
-from datetime import datetime
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
-import sentry_sdk
+from starlette.background import BackgroundTasks
+
+from pdf_parsing import parse_dataframes
+from util import save_pdf_to_folder, create_cover_sheet, separate_pdf_into_days, convert_pdf_to_dataframes, \
+    ToDictJSONResponse
 
 # import tempfile
 
@@ -124,4 +143,3 @@ async def store_pdf(file: UploadFile = File(...)):
                 "status": "WARN",
                 "message": "The date of the PDF could not be parsed. Storing full pdf..."
             })
-

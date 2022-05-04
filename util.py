@@ -1,3 +1,32 @@
+#  bszet_substitution_plan
+#  Copyright (C) 2022 TKFRvision, PBahner, MarcelCoding
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Affero General Public License as published
+#  by the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Affero General Public License for more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Affero General Public License as published
+#  by the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Affero General Public License for more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import io
 import json
 import os
@@ -72,13 +101,13 @@ def create_cover_sheet(path: str = ".", top1: str = None, top2: str = None, bott
     top2_size = _FONT_SMALL.getbbox(top2, anchor="lt")[2:]
     bottom_size = _FONT.getbbox(bottom, anchor="lt")[2:]
 
-    center_image = (size_image[0]/2, size_image[1]/2)
+    center_image = (size_image[0] / 2, size_image[1] / 2)
     # the length between the line and the border of the image
-    length_to_border_line = (size_image[0]-max(top_size[0], top2_size[0], bottom_size[0]))/2-border_margin
-    line_cords = (length_to_border_line, center_image[1], size_image[0]-length_to_border_line, center_image[1])
-    top2_text_cords = (center_image[0], line_cords[1]-width_line/2-text_margin)
-    top1_text_cords = (center_image[0], top2_text_cords[1]-top2_size[1]-text_margin)
-    bottom_text_cords = (center_image[0], line_cords[1]+width_line/2+text_margin)
+    length_to_border_line = (size_image[0] - max(top_size[0], top2_size[0], bottom_size[0])) / 2 - border_margin
+    line_cords = (length_to_border_line, center_image[1], size_image[0] - length_to_border_line, center_image[1])
+    top2_text_cords = (center_image[0], line_cords[1] - width_line / 2 - text_margin)
+    top1_text_cords = (center_image[0], top2_text_cords[1] - top2_size[1] - text_margin)
+    bottom_text_cords = (center_image[0], line_cords[1] + width_line / 2 + text_margin)
 
     img = Image.new('RGB', size_image, color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
@@ -103,7 +132,7 @@ def convert_pdf_to_dataframes(pdf: bytes, row_tol: int) -> Union[List[DataFrame]
         tmp_file.write(pdf)
     try:
         with io.BytesIO(pdf) as pdf_stream:
-            for page_num in range(1, PdfFileReader(pdf_stream).getNumPages()+1):
+            for page_num in range(1, PdfFileReader(pdf_stream).getNumPages() + 1):
                 try:
                     parsed_tables = camelot.read_pdf(
                         tmp_file.name,
@@ -118,7 +147,7 @@ def convert_pdf_to_dataframes(pdf: bytes, row_tol: int) -> Union[List[DataFrame]
                     data_frames.extend(tables)
                 except Exception:
                     # ToDo: test exception with table from 2nd school week
-                    data_frames.extend(convert_pdf_to_dataframes_fallback(pdf, page_num-1))
+                    data_frames.extend(convert_pdf_to_dataframes_fallback(pdf, page_num - 1))
 
     finally:
         os.remove(tmp_file.name)

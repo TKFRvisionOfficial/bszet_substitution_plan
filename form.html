@@ -1,50 +1,68 @@
+<!--
+  ~ bszet_substitution_plan
+  ~ Copyright (C) 2022 TKFRvision, PBahner, MarcelCoding
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as published
+  ~ by the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8"/>
     <title>Title</title>
-  </head>
-  <body>
-    <script>
-      function send(event, path) {
+</head>
+<body>
+<script>
+    function send(event, path) {
         event.preventDefault();
         const data = new FormData(event.target);
 
         fetch(`http://127.0.0.1:8000/${path}`, {
-          body: data,
-          method: "POST",
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${data.get("apikey")}`,
-          },
+            body: data,
+            method: "POST",
+            headers: {
+                "Content-Type": "multipart/form-data",
+                Authorization: `Bearer ${data.get("apikey")}`,
+            },
         }).then(console.log);
-      }
-    </script>
+    }
+</script>
 
-    <p>Results are printet in the brwoser console.</p>
+<p>Results are printet in the brwoser console.</p>
 
-    <h3><code>pdf2img</code></h3>
-    <form onsubmit="send(event, 'pdf2img')">
-      <label>
+<h3><code>pdf2img</code></h3>
+<form onsubmit="send(event, 'pdf2img')">
+    <label>
         Api Key:
-        <input type="text" name="apikey" id="apikey" />'
-      </label>
-      <br />
-      <input type="file" name="file" id="file" accept="application/pdf" />
-      <br />
-      <input type="submit" />
-    </form>
+        <input id="apikey" name="apikey" type="text"/>'
+    </label>
+    <br/>
+    <input accept="application/pdf" id="file" name="file" type="file"/>
+    <br/>
+    <input type="submit"/>
+</form>
 
-    <h3><code>parse-pdf</code></h3>
-    <form onsubmit="send(event, 'parse-pdf')">
-      <label>
+<h3><code>parse-pdf</code></h3>
+<form onsubmit="send(event, 'parse-pdf')">
+    <label>
         Api Key:
-        <input type="text" name="apikey" id="apikey" />'
-      </label>
-      <br />
-      <input type="file" name="file" id="file" accept="application/pdf" />
-      <br />
-      <input type="submit" />
-    </form>
+        <input id="apikey" name="apikey" type="text"/>'
+    </label>
+    <br/>
+    <input accept="application/pdf" id="file" name="file" type="file"/>
+    <br/>
+    <input type="submit"/>
+</form>
 </body>
 </html>

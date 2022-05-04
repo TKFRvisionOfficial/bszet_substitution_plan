@@ -1,7 +1,23 @@
+#  bszet_substitution_plan
+#  Copyright (C) 2022 TKFRvision, PBahner, MarcelCoding
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Affero General Public License as published
+#  by the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Affero General Public License for more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import requests
-import json
 
 with open(r"C:\Users\tkfrv\Downloads\nur_bilder.pdf", "rb") as file:
-	response_text = requests.post("URL", files={'file': file}, headers={"Authorization": "Bearer API_KEY"}).content.decode("utf-8")
+    response_text = requests.post("URL", files={'file': file},
+                                  headers={"Authorization": "Bearer API_KEY"}).content.decode("utf-8")
 
 print(response_text)
