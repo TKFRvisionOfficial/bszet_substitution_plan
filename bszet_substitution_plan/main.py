@@ -18,16 +18,18 @@ import asyncio
 import os
 from datetime import datetime
 from glob import glob
-from typing import Iterable
+from typing import Iterable, Optional
 
 import sentry_sdk
-from fastapi import FastAPI, UploadFile, File, Response, Request
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi import FastAPI, UploadFile, File, Response, Request, Header, HTTPException, Depends
+from fastapi.responses import JSONResponse, FileResponse, PlainTextResponse
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 from starlette.background import BackgroundTasks
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from pdf_parsing import parse_dataframes
-from util import save_pdf_to_folder, create_cover_sheet, separate_pdf_into_days, convert_pdf_to_dataframes, \
+from bszet_substitution_plan.pdf_parsing import parse_dataframes
+from bszet_substitution_plan.util import save_pdf_to_folder, create_cover_sheet, separate_pdf_into_days, \
+    convert_pdf_to_dataframes, \
     ToDictJSONResponse
 
 # import tempfile
@@ -35,8 +37,8 @@ from util import save_pdf_to_folder, create_cover_sheet, separate_pdf_into_days,
 
 auth_key = f'Bearer {os.environ["AUTH_KEY"]}'
 row_tol = int(os.environ.get("ROW_TOL", 20))
-image_path = "pictures"
-pdf_archive_path = "vplan-archive"
+image_path = os.environ["IMAGE_PATH"]
+pdf_archive_path = os.environ["PDF_ARCHIVE_PATH"]
 
 if not os.path.exists(pdf_archive_path):
     os.mkdir(pdf_archive_path)
@@ -47,7 +49,13 @@ else:
     for _file in glob(os.path.join(image_path, "*.jpg")):
         os.remove(_file)
 
-app = FastAPI()
+
+async def verify_authorization(authorization: Optional[str] = Header(None)):
+    if authorization != auth_key:
+        raise HTTPException(403, "Forbidden")
+
+
+app = FastAPI(dependencies=(Depends(verify_authorization),))
 
 if "SENTRY_DSN" in os.environ:
     sentry_sdk.init(
@@ -62,20 +70,17 @@ if "SENTRY_DSN" in os.environ:
         pass
 
 
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exception: StarletteHTTPException):
+    return PlainTextResponse(str(exception.detail), status_code=exception.status_code)
+
+
 async def remove_later(uuids: Iterable[str]):
     await asyncio.sleep(600)  # delete file after 10 minutes
     for uuid in uuids:
         file_path = os.path.join(image_path, uuid + ".jpg")
         if os.path.exists(file_path):
             os.remove(file_path)
-
-
-@app.middleware("http")
-async def check_authorization(request: Request, call_next):
-    if request.headers.get("Authorization") == auth_key:
-        return await call_next(request)
-    else:
-        return Response(content="Forbidden", status_code=403)
 
 
 @app.post("/pdf2img")
