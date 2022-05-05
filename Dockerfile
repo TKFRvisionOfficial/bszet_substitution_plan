@@ -12,15 +12,16 @@ RUN apt-get update \
  && mv Anton-Regular.ttf /app/fonts/Anton-Regular.ttf \
  && rm -rf /tmp/fonts
 
+ENV FONT_PATH=/app/fonts/Anton-Regular.ttf
+ENV IMAGE_PATH=/app/pictures
+ENV PDF_ARCHIVE_PATH=/app/vplan-archive
+
 WORKDIR /app
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY util.py .
-COPY pdf_converter.py .
-COPY pdf_parsing.py .
-COPY img_to_dataframe.py .
+COPY bszet_substitution_plan bszet_substitution_plan
 EXPOSE 8000
 
-ENTRYPOINT [ "uvicorn", "pdf_converter:app", "--port", "8000", "--host", "0.0.0.0" ]
+ENTRYPOINT [ "uvicorn", "bszet_substitution_plan.main:app", "--port", "8000", "--host", "0.0.0.0" ]

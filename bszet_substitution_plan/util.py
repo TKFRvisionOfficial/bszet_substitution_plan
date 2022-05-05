@@ -13,19 +13,6 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Affero General Public License as published
-#  by the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Affero General Public License for more details.
-#
-#  You should have received a copy of the GNU Affero General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import io
 import json
@@ -43,10 +30,10 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 from pandas import DataFrame
 from starlette.responses import JSONResponse
 
-from img_to_dataframe import convert_table_img_to_list
-from pdf_parsing import parse_date
+from bszet_substitution_plan.img_to_dataframe import convert_table_img_to_list
+from bszet_substitution_plan.pdf_parsing import parse_date
 
-_FONT_PATH = r"fonts/Anton-Regular.ttf"
+_FONT_PATH = os.environ["FONT_PATH"]
 _FONT = ImageFont.truetype(_FONT_PATH, 80)
 _FONT_SMALL = ImageFont.truetype(_FONT_PATH, 30)
 _BSZET_ORANGE = (238, 104, 35)
