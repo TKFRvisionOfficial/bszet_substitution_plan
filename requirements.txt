@@ -10,6 +10,6 @@ aiofiles
 pandas
 colorama
 numpy
-opencv-contrib-python
+opencv-contrib-python==4.5.5.64
 easyocr
 sentry-sdk
